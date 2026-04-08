@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>先挣一个亿 - UI原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* 手机模拟器 */
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: #000;
+            border-radius: 40px;
+            padding: 12px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* 状态栏 */
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        /* 主界面 */
+        .main-screen {
+            height: calc(100% - 44px);
+            display: flex;
+            flex-direction: column;
+            padding: 0 20px 20px;
+        }
+        
+        /* 顶部区域 - 余额 */
+        .top-section {
+            padding: 20px 0;
+            text-align: center;
+        }
+        
+        .balance-label {
+            color: #b0b0b0;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .balance-value {
+            color: #ffd700;
+            font-size: 42px;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+            font-family: 'DIN Alternate', 'Roboto', sans-serif;
+        }
+        
+        .target-progress {
+            margin-top: 15px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            width: 1.23%;
+            background: linear-gradient(90deg, #ffd700, #ffa500);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            color: #b0b0b0;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .click-count {
+            color: #b0b0b0;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        
+        /* 中部区域 - 硬币 */
+        .coin-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .coin-container {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .coin-container:active {
+            transform: scale(0.95);
+        }
+        
+        .coin {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ffd700, #ffa500);
+            box-shadow: 
+                0 10px 30px rgba(255, 215, 0, 0.4),
+                inset 0 -5px 20px rgba(0,0,0,0.2),
+                inset 0 5px 20px rgba(255,255,255,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 4px solid #ffed4e;
+        }
+        
+        .coin::before {
+            content: '';
+            position: absolute;
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255,255,255,0.3);
+        }
+        
+        .coin-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #8b6914;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+        }
+        
+        .coin-label {
+            font-size: 14px;
+            color: #8b6914;
+            margin-top: 5px;
+        }
+        
+        .coin-hint {
+            position: absolute;
+            bottom: -40px;
+            color: #b0b0b0;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        /* 飘字效果 */
+        .floating-text {
+            position: absolute;
+            color: #4caf50;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+        }
+        
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(1.2);
+            }
+        }
+        
+        /* 底部区域 - 按钮 */
+        .bottom-section {
+            padding: 20px 0;
+        }
+        
+        .main-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #ffd700, #ffa500);
+            color: #5a4a00;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .btn-secondary:active {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .btn-shop {
+            display: none;
+        }
+        
+        .btn-shop.visible {
+            display: block;
+        }
+        
+        .secondary-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .btn-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        /* 弹窗 */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 100;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            width: 100%;
+            max-height: 80%;
+            background: linear-gradient(180deg, #252545 0%, #1a1a2e 100%);
+            border-radius: 25px 25px 0 0;
+            padding: 25px;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        /* 商店样式 */
+        .shop-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .shop-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .shop-item-name {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .shop-item-desc {
+            color: #b0b0b0;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        
+        .shop-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-buy {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-buy-coin {
+            background: linear-gradient(145deg, #ffd700, #ffa500);
+            color: #5a4a00;
+        }
+        
+        .btn-buy-ad {
+            background: linear-gradient(145deg, #4caf50, #45a049);
+            color: #fff;
+        }
+        
+        .btn-buy-ad::before {
+            content: '📺 ';
+        }
+        
+        .shop-hint {
+            color: #666;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+        }
+        
+        /* 排行榜样式 */
+        .rank-header {
+            background: rgba(255,215,0,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .rank-my-rank {
+            color: #ffd700;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .rank-my-clicks {
+            color: #b0b0b0;
+            font-size: 13px;
+        }
+        
+        .rank-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .rank-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .rank-number {
+            width: 30px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .rank-number.gold {
+            color: #ffd700;
+        }
+        
+        .rank-number.silver {
+            color: #c0c0c0;
+        }
+        
+        .rank-number.bronze {
+            color: #cd7f32;
+        }
+        
+        .rank-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            margin: 0 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        .rank-info {
+            flex: 1;
+        }
+        
+        .rank-name {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .rank-time {
+            color: #666;
+            font-size: 11px;
+        }
+        
+        .rank-clicks {
+            color: #ffd700;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* 胜利弹窗 */
+        .victory-modal .modal-content {
+            max-height: 60%;
+            text-align: center;
+        }
+        
+        .victory-icon {
+            font-size: 80px;
+            margin-bottom: 15px;
+        }
+        
+        .victory-title {
+            color: #ffd700;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .victory-text {
+            color: #b0b0b0;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .victory-stats {
+            background: rgba(255,215,0,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .victory-stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .victory-stat:last-child {
+            margin-bottom: 0;
+        }
+        
+        .victory-stat-label {
+            color: #b0b0b0;
+        }
+        
+        .victory-stat-value {
+            color: #ffd700;
+            font-weight: 600;
+        }
+        
+        /* 原型说明 */
+        .prototype-info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 14px;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        .prototype-info h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .prototype-info p {
+            margin: 5px 0;
+            color: #b0b0b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 5G 🔋</span>
+            </div>
+            
+            <!-- 主界面 -->
+            <div class="main-screen">
+                <!-- 顶部区域 -->
+                <div class="top-section">
+                    <div class="balance-label">当前余额</div>
+                    <div class="balance-value" id="balance">¥1,234,567</div>
+                    <div class="target-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress"></div>
+                        </div>
+                        <div class="progress-text">目标: ¥100,000,000 (1.23%)</div>
+                    </div>
+                    <div class="click-count">今日点击: <span id="clicks">1,234</span> 次</div>
+                </div>
+                
+                <!-- 中部区域 - 硬币 -->
+                <div class="coin-section">
+                    <div class="coin-container" id="coin" onclick="flipCoin()">
+                        <div class="coin">
+                            <div class="coin-value">1</div>
+                            <div class="coin-label">面值</div>
+                        </div>
+                        <div class="coin-hint">点击抛硬币</div>
+                    </div>
+                </div>
+                
+                <!-- 底部区域 -->
+                <div class="bottom-section">
+                    <div class="main-buttons">
+                        <button class="btn btn-primary btn-shop visible" id="shopBtn" onclick="openShop()">
+                            🛒 商店
+                        </button>
+                    </div>
+                    <div class="secondary-buttons">
+                        <button class="btn-icon" onclick="openRank()" title="排行榜">🏆</button>
+                        <button class="btn-icon" onclick="openSettings()" title="设置">⚙️</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 商店弹窗 -->
+            <div class="modal" id="shopModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title">🛒 商店</div>
+                        <button class="modal-close" onclick="closeModal('shopModal')">✕</button>
+                    </div>
+                    
+                    <div class="shop-item">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">📈 面值升级</span>
+                        </div>
+                        <div class="shop-item-desc">所有硬币正面面值 +1</div>
+                        <div class="shop-item-actions">
+                            <button class="btn-buy btn-buy-coin">¥100</button>
+                            <button class="btn-buy btn-buy-ad">免费</button>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-item">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">🪙 购买硬币</span>
+                        </div>
+                        <div class="shop-item-desc">增加一枚新硬币（面值=1）</div>
+                        <div class="shop-item-actions">
+                            <button class="btn-buy btn-buy-coin">¥50</button>
+                            <button class="btn-buy btn-buy-ad">免费</button>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-item">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">🤖 自动翻转</span>
+                        </div>
+                        <div class="shop-item-desc">自动抛硬币 1 分钟</div>
+                        <div class="shop-item-actions">
+                            <button class="btn-buy btn-buy-ad" style="flex: 1;">📺 看广告获取</button>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-hint">更多升级项即将推出...</div>
+                </div>
+            </div>
+            
+            <!-- 排行榜弹窗 -->
+            <div class="modal" id="rankModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title">🏆 今日榜单</div>
+                        <button class="modal-close" onclick="closeModal('rankModal')">✕</button>
+                    </div>
+                    
+                    <div class="rank-header">
+                        <div class="rank-my-rank">我的排名: 第 23 名</div>
+                        <div class="rank-my-clicks">点击次数: 1,234 次</div>
+                    </div>
+                    
+                    <div class="rank-list">
+                        <div class="rank-item">
+                            <div class="rank-number gold">🥇</div>
+                            <div class="rank-avatar">A</div>
+                            <div class="rank-info">
+                                <div class="rank-name">玩家A</div>
+                                <div class="rank-time">23:45 达成</div>
+                            </div>
+                            <div class="rank-clicks">567次</div>
+                        </div>
+                        
+                        <div class="rank-item">
+                            <div class="rank-number silver">🥈</div>
+                            <div class="rank-avatar">B</div>
+                            <div class="rank-info">
+                                <div class="rank-name">玩家B</div>
+                                <div class="rank-time">23:42 达成</div>
+                            </div>
+                            <div class="rank-clicks">623次</div>
+                        </div>
+                        
+                        <div class="rank-item">
+                            <div class="rank-number bronze">🥉</div>
+                            <div class="rank-avatar">C</div>
+                            <div class="rank-info">
+                                <div class="rank-name">玩家C</div>
+                                <div class="rank-time">23:38 达成</div>
+                            </div>
+                            <div class="rank-clicks">701次</div>
+                        </div>
+                        
+                        <div class="rank-item">
+                            <div class="rank-number">4</div>
+                            <div class="rank-avatar">D</div>
+                            <div class="rank-info">
+                                <div class="rank-name">玩家D</div>
+                                <div class="rank-time">23:30 达成</div>
+                            </div>
+                            <div class="rank-clicks">856次</div>
+                        </div>
+                        
+                        <div class="rank-item" style="background: rgba(255,215,0,0.1);">
+                            <div class="rank-number">23</div>
+                            <div class="rank-avatar" style="background: linear-gradient(145deg, #ffd700, #ffa500); color: #5a4a00;">我</div>
+                            <div class="rank-info">
+                                <div class="rank-name">我</div>
+                                <div class="rank-time">21:30 达成</div>
+                            </div>
+                            <div class="rank-clicks">1,234次</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 设置弹窗 -->
+            <div class="modal" id="settingsModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title">⚙️ 设置</div>
+                        <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+                    </div>
+                    
+                    <div class="shop-item">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">🔊 音效</span>
+                            <span style="color: #4caf50;">开启</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-item">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">🎵 音乐</span>
+                            <span style="color: #4caf50;">开启</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-item">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">📳 震动</span>
+                            <span style="color: #4caf50;">开启</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-item" style="margin-top: 20px;">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">❓ 游戏说明</span>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-item">
+                        <div class="shop-item-header">
+                            <span class="shop-item-name">💬 反馈建议</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 胜利弹窗 -->
+            <div class="modal victory-modal" id="victoryModal">
+                <div class="modal-content">
+                    <div class="victory-icon">🎉</div>
+                    <div class="victory-title">恭喜达成目标!</div>
+                    <div class="victory-text">你成功挣到了一个亿!</div>
+                    
+                    <div class="victory-stats">
+                        <div class="victory-stat">
+                            <span class="victory-stat-label">点击次数</span>
+                            <span class="victory-stat-value">1,234</span>
+                        </div>
+                        <div class="victory-stat">
+                            <span class="victory-stat-label">今日排名</span>
+                            <span class="victory-stat-value">第 23 名</span>
+                        </div>
+                        <div class="victory-stat">
+                            <span class="victory-stat-label">达成时间</span>
+                            <span class="victory-stat-value">21:30</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="width: 100%;" onclick="closeModal('victoryModal')">
+                        分享成绩
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 原型说明 -->
+    <div class="prototype-info">
+        <h3>《先挣一个亿》UI 原型图</h3>
+        <p>📱 竖屏 375×812 (iPhone X 尺寸)</p>
+        <p>🎨 主色调: 金色 #FFD700 + 深灰 #1A1A2E</p>
+        <p>👆 点击硬币可体验交互效果</p>
+        <p>🛒 点击商店/排行榜/设置查看弹窗</p>
+    </div>
+    
+    <script>
+        let balance = 1234567;
+        let clicks = 1234;
+        let coinValue = 1;
+        
+        function flipCoin() {
+            clicks++;
+            document.getElementById('clicks').textContent = clicks.toLocaleString();
+            
+            // 50% 概率正面
+            const isHeads = Math.random() > 0.5;
+            
+            // 创建飘字效果
+            const coin = document.getElementById('coin');
+            const floating = document.createElement('div');
+            floating.className = 'floating-text';
+            
+            if (isHeads) {
+                balance += coinValue;
+                floating.textContent = '+' + coinValue;
+                floating.style.color = '#4caf50';
+            } else {
+                floating.textContent = '背面';
+                floating.style.color = '#757575';
+            }
+            
+            floating.style.left = '50%';
+            floating.style.top = '30%';
+            floating.style.transform = 'translateX(-50%)';
+            coin.appendChild(floating);
+            
+            setTimeout(() => floating.remove(), 1000);
+            
+            // 更新余额显示
+            document.getElementById('balance').textContent = '¥' + balance.toLocaleString();
+            
+            // 更新进度条
+            const progress = Math.min((balance / 100000000) * 100, 100);
+            document.getElementById('progress').style.width = progress + '%';
+            
+            // 显示商店按钮（余额>=5）
+            if (balance >= 5) {
+                document.getElementById('shopBtn').classList.add('visible');
+            }
+        }
+        
+        function openShop() {
+            document.getElementById('shopModal').classList.add('active');
+        }
+        
+        function openRank() {
+            document.getElementById('rankModal').classList.add('active');
+        }
+        
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // 点击模态框背景关闭
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
