@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "27631bac-8fa5-49c2-a789-a75371c70305",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "27631bac-8fa5-49c2-a789-a75371c70305@6c48a",
+      "displayName": "Effect_ElectricShield_1_019",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "27631bac-8fa5-49c2-a789-a75371c70305",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "27631bac-8fa5-49c2-a789-a75371c70305@f9941",
+      "displayName": "Effect_ElectricShield_1_019",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": -12.5,
+        "offsetY": 6.5,
+        "trimX": 6,
+        "trimY": 14,
+        "width": 228,
+        "height": 224,
+        "rawWidth": 265,
+        "rawHeight": 265,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -114,
+            -112,
+            0,
+            114,
+            -112,
+            0,
+            -114,
+            112,
+            0,
+            114,
+            112,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            6,
+            251,
+            234,
+            251,
+            6,
+            27,
+            234,
+            27
+          ],
+          "nuv": [
+            0.022641509433962263,
+            0.1018867924528302,
+            0.8830188679245283,
+            0.1018867924528302,
+            0.022641509433962263,
+            0.9471698113207547,
+            0.8830188679245283,
+            0.9471698113207547
+          ],
+          "minPos": [
+            -114,
+            -112,
+            0
+          ],
+          "maxPos": [
+            114,
+            112,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "27631bac-8fa5-49c2-a789-a75371c70305@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "hasAlpha": true,
+    "fixAlphaTransparencyArtifacts": false,
+    "redirect": "27631bac-8fa5-49c2-a789-a75371c70305@6c48a"
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "9eb074be-a2aa-4343-b7bd-bdab998154c9",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "9eb074be-a2aa-4343-b7bd-bdab998154c9@6c48a",
+      "displayName": "Effect_ElectricShield_1_002",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "9eb074be-a2aa-4343-b7bd-bdab998154c9",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "9eb074be-a2aa-4343-b7bd-bdab998154c9@f9941",
+      "displayName": "Effect_ElectricShield_1_002",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 11.5,
+        "offsetY": 2.5,
+        "trimX": 34,
+        "trimY": 2,
+        "width": 220,
+        "height": 256,
+        "rawWidth": 265,
+        "rawHeight": 265,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -110,
+            -128,
+            0,
+            110,
+            -128,
+            0,
+            -110,
+            128,
+            0,
+            110,
+            128,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            34,
+            263,
+            254,
+            263,
+            34,
+            7,
+            254,
+            7
+          ],
+          "nuv": [
+            0.12830188679245283,
+            0.026415094339622643,
+            0.9584905660377359,
+            0.026415094339622643,
+            0.12830188679245283,
+            0.9924528301886792,
+            0.9584905660377359,
+            0.9924528301886792
+          ],
+          "minPos": [
+            -110,
+            -128,
+            0
+          ],
+          "maxPos": [
+            110,
+            128,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "9eb074be-a2aa-4343-b7bd-bdab998154c9@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "hasAlpha": true,
+    "fixAlphaTransparencyArtifacts": false,
+    "redirect": "9eb074be-a2aa-4343-b7bd-bdab998154c9@6c48a"
+  }
+}

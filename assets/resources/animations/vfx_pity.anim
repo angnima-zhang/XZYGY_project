@@ -8,10 +8,10 @@
     },
     "_native": "",
     "sample": 60,
-    "speed": 0.2,
+    "speed": 0.3,
     "wrapMode": 1,
     "enableTrsBlending": false,
-    "_duration": 0.21499999999999994,
+    "_duration": 0.21666666666666667,
     "_hash": 500763545,
     "_tracks": [
       {
