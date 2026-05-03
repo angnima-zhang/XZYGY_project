@@ -642,7 +642,7 @@
         "__id__": 31
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 37
@@ -1577,7 +1577,7 @@
       "__id__": 10
     },
     "_children": [],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 40
@@ -1758,7 +1758,7 @@
         "__id__": 53
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 56
@@ -2417,7 +2417,7 @@
         "__id__": 66
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 70
@@ -2926,7 +2926,7 @@
         "__id__": 73
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 82
@@ -3663,7 +3663,7 @@
         "__id__": 92
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 96
@@ -3707,7 +3707,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "Effect_DitheredFire_1_000",
+    "_name": "streak_fire",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -8475,7 +8475,7 @@
         "__id__": 212
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 215
@@ -10405,7 +10405,7 @@
         "__id__": 260
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 263
@@ -12054,7 +12054,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "auto_start",
+    "_name": "vfx",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -12065,7 +12065,7 @@
         "__id__": 302
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 305
@@ -18493,7 +18493,7 @@
         "__id__": 467
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 470
@@ -20423,7 +20423,7 @@
         "__id__": 515
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 518
@@ -22356,7 +22356,7 @@
         "__id__": 566
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 569
@@ -24395,7 +24395,7 @@
         "__id__": 614
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 617
@@ -26325,7 +26325,7 @@
         "__id__": 662
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 665
@@ -28255,7 +28255,7 @@
         "__id__": 710
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 713
@@ -30185,7 +30185,7 @@
         "__id__": 758
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 761
@@ -32118,7 +32118,7 @@
         "__id__": 809
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 812
