@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, ProgressBar, Sprite, director } from 'cc';
+import { _decorator, Component, Node, ProgressBar, Sprite, Label, director } from 'cc';
 
 const { ccclass, property } = _decorator;
 
@@ -6,10 +6,14 @@ const { ccclass, property } = _decorator;
  * LoadingCtrl - Loading 场景控制器
  *
  * 流程：进入游戏 → 立即展示 loading 界面
- *       → 后台 preloadScene('main')，进度条实时更新
+ *       → 后台 preloadScene('main')，进度条 + 百分比数字实时更新
  *       → 加载完成 → 自动跳转 main.scene
  *
  * 挂载位置：loading.scene / Canvas 节点
+ *
+ * 节点引用说明：
+ *   progressNode → 指向 ProgressBar 所在节点（驱动进度条）
+ *   loading 节点（Canvas 子节点）内含 progress 子节点，持有百分比 Label
  */
 @ccclass('LoadingCtrl')
 export class LoadingCtrl extends Component {
@@ -20,6 +24,9 @@ export class LoadingCtrl extends Component {
 
     private _progressBar: ProgressBar | null = null;
     private _barSprite: Sprite | null = null;
+
+    /** 百分比数字 Label（Canvas/loading/progress） */
+    private _percentLabel: Label | null = null;
 
     /** preloadScene 回调的目标进度 [0~1] */
     private _targetProgress: number = 0;
@@ -49,12 +56,24 @@ export class LoadingCtrl extends Component {
         if (!this._progressBar) {
             console.warn('[LoadingCtrl] 未找到 ProgressBar 组件，请检查 progressNode 配置');
         }
+
+        // 查找百分比 Label：Canvas → loading → progress
+        const loadingNode = this.node.getChildByName('loading');
+        const percentNode = loadingNode?.getChildByName('progress');
+        this._percentLabel = percentNode?.getComponent(Label) ?? null;
+        if (!this._percentLabel) {
+            console.warn('[LoadingCtrl] 未找到百分比 Label，请检查 Canvas/loading/progress 节点');
+        }
     }
 
     start() {
         // 重置进度条为 0%
         if (this._progressBar) {
             this._progressBar.progress = 0;
+        }
+        // 初始化百分比显示
+        if (this._percentLabel) {
+            this._percentLabel.string = '0%';
         }
         // 开始后台加载主场景
         this.startPreload();
@@ -67,13 +86,19 @@ export class LoadingCtrl extends Component {
         if (Math.abs(this._displayProgress - this._targetProgress) > 0.001) {
             const delta = (this._targetProgress - this._displayProgress) * this.LERP_SPEED * dt;
             this._displayProgress += delta;
-            // 防止overshoot
+            // 防止 overshoot
             if (delta > 0 && this._displayProgress > this._targetProgress) {
                 this._displayProgress = this._targetProgress;
             } else if (delta < 0 && this._displayProgress < this._targetProgress) {
                 this._displayProgress = this._targetProgress;
             }
             this._progressBar.progress = this._displayProgress;
+        }
+
+        // 实时更新百分比数字
+        if (this._percentLabel) {
+            const pct = Math.floor(this._displayProgress * 100);
+            this._percentLabel.string = `${pct}%`;
         }
 
         // preload 完成 → 切换到 main.scene
