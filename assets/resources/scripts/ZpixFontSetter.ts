@@ -23,7 +23,7 @@ export class ZpixFontSetter extends Component {
         const labels = root.getComponentsInChildren(Label);
         for (const label of labels) {
             // 仅替换使用系统字体的 Label，避免覆盖已单独指定字体的组件
-            if (!label.font || label.font === Font) {
+            if (!label.font) {
                 label.font = font;
             }
         }
