@@ -10,25 +10,29 @@
  * - 根节点（挂载此脚本）
  *   ├── bg: 背景
  *   ├── icon: 图标
- *   ├── title: 标题（升级项名称）
- *   ├── desc: 描述（当前数值）
- *   ├── price: 价格（升级价格）
- *   └── button: 升级按钮
+ *   ├── name: 标题（升级项名称）
+ *   ├── currentValue: 当前值
+ *   ├── to: 箭头（"→"）
+ *   ├── nextValue: 升级后值
+ *   ├── buy: 价格按钮
+ *   ├── ad: 广告按钮
+ *   └── vfx: 升级特效（非激活）
  * 
  * 使用方式：
- * 1. 将此脚本挂载到升级项根节点上（如 value、speed、auto 节点）
- * 2. 在属性面板中配置升级项类型（UpgradeType）
+ * 1. 将此脚本挂载到升级项根节点上
+ * 2. 在属性面板中选择对应的升级类型
  * 3. 配置各子节点引用
  * 
  * 示例：
- * - value 节点 -> UpgradeType: 'value' (面值升级)
- * - speed 节点 -> UpgradeType: 'animSpeed' (动画速度升级)
- * - auto 节点 -> UpgradeType: 'autoDuration' (自动持续时间升级)
+ * - value 节点 -> 升级项类型: 'value'
+ * - speed 节点 -> 升级项类型: 'speed'
+ * - lucky 节点 -> 升级项类型: 'lucky'
  */
 
 import { _decorator, Component, Node, Label, Button, Sprite, Color, Enum } from 'cc';
 import { GameManager } from '../core/GameManager';
 import { UpgradeType } from '../core/PlayerData';
+import { NumberFormatter } from '../utils/NumberFormatter';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -46,13 +50,13 @@ export class UpgradeItemCtrl extends Component {
     @property({
         type: Enum({
             '面值': 0,
-            '动画速度': 1,
-            '正面概率': 2,
-            '暴击率': 3,
+            '速度': 1,
+            '幸运': 2,
+            '暴击': 3,
             '暴击加成': 4,
             '保底': 5,
             '连击加成': 6,
-            '自动持续时间': 7
+            '自动时间': 7
         }),
         displayName: '升级项类型',
         tooltip: '选择此升级项对应的类型'
@@ -64,13 +68,13 @@ export class UpgradeItemCtrl extends Component {
      */
     private readonly UPGRADE_TYPE_MAP: UpgradeType[] = [
         'value',
-        'animSpeed',
-        'headProb',
-        'critRate',
-        'critBonus',
+        'speed',
+        'lucky',
+        'critical',
+        'criticalBonus',
         'pity',
         'streakBonus',
-        'autoDuration'
+        'time'
     ];
 
     /**
@@ -82,30 +86,38 @@ export class UpgradeItemCtrl extends Component {
 
     /**
      * 标题 Label 节点
-     * 显示升级项名称（如：面值、动画速度）
      */
-    @property({ type: Label, displayName: '标题', tooltip: 'title 节点的 Label 组件' })
+    @property({ type: Label, displayName: '标题', tooltip: 'name 节点的 Label 组件' })
     titleLabel: Label | null = null;
 
     /**
-     * 价格 Label 节点
-     * 显示升级价格（如：5）
+     * 当前值 Label 节点
      */
-    @property({ type: Label, displayName: '价格', tooltip: 'price 节点的 Label 组件' })
+    @property({ type: Label, displayName: '当前值', tooltip: 'currentValue 节点的 Label 组件' })
+    currentValueLabel: Label | null = null;
+
+    /**
+     * 升级后值 Label 节点
+     */
+    @property({ type: Label, displayName: '升级后值', tooltip: 'nextValue 节点的 Label 组件' })
+    nextValueLabel: Label | null = null;
+
+    /**
+     * 价格 Label 节点
+     */
+    @property({ type: Label, displayName: '价格', tooltip: 'buy/price 节点的 Label 组件' })
     priceLabel: Label | null = null;
 
     /**
      * 升级按钮节点（余额购买）
-     * 余额不足时会置灰
      */
-    @property({ type: Node, displayName: '升级按钮（余额）', tooltip: '余额购买按钮节点' })
+    @property({ type: Node, displayName: '升级按钮（余额）', tooltip: 'buy 按钮节点' })
     upgradeButtonNode: Node | null = null;
 
     /**
      * 广告按钮节点（看广告免费升级）
-     * 始终保持原色，不受余额影响
      */
-    @property({ type: Node, displayName: '广告按钮', tooltip: '广告按钮节点（保持原色）' })
+    @property({ type: Node, displayName: '广告按钮', tooltip: 'ad 按钮节点（保持原色）' })
     adButtonNode: Node | null = null;
 
     /**
@@ -114,14 +126,9 @@ export class UpgradeItemCtrl extends Component {
     private _gameManager: GameManager | null = null;
 
     /**
-     * 置灰颜色（半透明白色）
+     * 置灰颜色
      */
     private readonly GRAY_COLOR = new Color(128, 128, 128, 255);
-
-    /**
-     * 正常颜色
-     */
-    private readonly NORMAL_COLOR = new Color(255, 255, 255, 255);
 
     /**
      * 升级按钮的原始颜色（缓存）
@@ -130,26 +137,22 @@ export class UpgradeItemCtrl extends Component {
 
     /**
      * 组件加载时调用
-     * 初始化组件引用和事件监听
      */
     onLoad() {
-        // 获取游戏管理器实例
         this._gameManager = GameManager.getInstance();
 
         // 初始化标题
         this.updateTitle();
 
-        // 缓存升级按钮的原始颜色（用于恢复）
+        // 缓存升级按钮的原始颜色
         if (this.upgradeButtonNode) {
             const sprite = this.upgradeButtonNode.getComponent(Sprite);
             if (sprite) {
                 this._upgradeButtonOriginalColor = sprite.color.clone();
             }
-            // 绑定升级按钮点击事件
             this.upgradeButtonNode.on(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
         }
 
-        // 绑定广告按钮点击事件（如果存在）
         if (this.adButtonNode) {
             this.adButtonNode.on(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
         }
@@ -159,7 +162,6 @@ export class UpgradeItemCtrl extends Component {
 
     /**
      * 组件启用时调用
-     * 刷新 UI 显示
      */
     onEnable() {
         this.refreshUI();
@@ -167,7 +169,6 @@ export class UpgradeItemCtrl extends Component {
 
     /**
      * 组件销毁时调用
-     * 清理事件监听
      */
     onDestroy() {
         if (this.upgradeButtonNode) {
@@ -184,8 +185,7 @@ export class UpgradeItemCtrl extends Component {
     private onUpgradeClick(): void {
         if (!this._gameManager) return;
 
-        // 检查余额是否足够
-        const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType as UpgradeType);
+        const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType);
         const balance = this._gameManager.getBalance();
         
         if (balance < currentPrice) {
@@ -193,12 +193,10 @@ export class UpgradeItemCtrl extends Component {
             return;
         }
 
-        // 执行升级
-        const success = this._gameManager.buyUpgrade(this.upgradeType as UpgradeType);
+        const success = this._gameManager.buyUpgrade(this.upgradeType);
 
         if (success) {
             console.log(`[UpgradeItemCtrl] 升级成功: ${this.upgradeType}`);
-            // 升级成功后刷新 UI
             this.refreshUI();
         } else {
             console.warn(`[UpgradeItemCtrl] 升级失败: 余额不足`);
@@ -212,23 +210,16 @@ export class UpgradeItemCtrl extends Component {
     private onAdButtonClick(): void {
         console.log(`[UpgradeItemCtrl] 广告按钮点击，准备播放广告...`);
         // TODO: 实现广告播放逻辑
-        // 1. 检查广告是否可用
-        // 2. 播放激励视频广告
-        // 3. 广告播放成功后免费升级
-        // 4. 刷新 UI
     }
 
     /**
      * 刷新所有 UI 显示
-     * 包括价格、按钮状态
      */
     private refreshUI(): void {
         if (!this._gameManager) return;
 
-        // 更新价格显示
+        this.updateValueDisplay();
         this.updatePriceDisplay();
-
-        // 更新按钮状态（余额不足时变灰）
         this.updateButtonState();
     }
 
@@ -238,18 +229,51 @@ export class UpgradeItemCtrl extends Component {
     private updateTitle(): void {
         if (!this.titleLabel || !this._gameManager) return;
 
-        const upgradeNames: Record<UpgradeType, string> = {
-            'value': '面值',
-            'animSpeed': '动画速度',
-            'headProb': '正面概率',
-            'critRate': '暴击率',
-            'critBonus': '暴击加成',
-            'pity': '保底',
-            'streakBonus': '连击加成',
-            'autoDuration': '自动持续时间'
-        };
-        const config = { name: upgradeNames[this.upgradeType] || '未知' };
+        const config = this._gameManager.getPlayerData().getUpgradeConfig(this.upgradeType);
         this.titleLabel.string = config.name;
+    }
+
+    /**
+     * 更新数值显示
+     */
+    private updateValueDisplay(): void {
+        if (!this.currentValueLabel || !this.nextValueLabel || !this._gameManager) return;
+
+        const currentValue = this._gameManager.getUpgradeValue(this.upgradeType);
+        const nextValue = this._gameManager.calculateNextUpgradeValue(this.upgradeType);
+
+        let currentStr: string;
+        let nextStr: string;
+
+        switch (this.upgradeType) {
+            case 'value':
+            case 'criticalBonus':
+            case 'streakBonus':
+                currentStr = NumberFormatter.formatMoney(currentValue);
+                nextStr = NumberFormatter.formatMoney(nextValue);
+                break;
+            case 'speed':
+            case 'time':
+                currentStr = NumberFormatter.formatTime(currentValue);
+                nextStr = NumberFormatter.formatTime(nextValue);
+                break;
+            case 'lucky':
+            case 'critical':
+                currentStr = NumberFormatter.formatPercent(currentValue);
+                nextStr = NumberFormatter.formatPercent(nextValue);
+                break;
+            case 'pity':
+                currentStr = NumberFormatter.formatCount(currentValue);
+                nextStr = NumberFormatter.formatCount(nextValue);
+                break;
+            default:
+                currentStr = currentValue.toString();
+                nextStr = nextValue.toString();
+                break;
+        }
+
+        this.currentValueLabel.string = currentStr;
+        this.nextValueLabel.string = nextStr;
     }
 
     /**
@@ -258,51 +282,43 @@ export class UpgradeItemCtrl extends Component {
     private updatePriceDisplay(): void {
         if (!this.priceLabel || !this._gameManager) return;
 
-        const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType as UpgradeType);
+        const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType);
         this.priceLabel.string = `${currentPrice}`;
     }
 
     /**
      * 更新按钮状态
-     * 余额不足时：
-     * - 升级按钮置灰并禁用
-     * - 广告按钮保持原色
+     * 余额不足时升级按钮置灰，广告按钮保持原色
      */
     private updateButtonState(): void {
         if (!this._gameManager) return;
 
-        const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType as UpgradeType);
+        const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType);
         const balance = this._gameManager.getBalance();
         const canAfford = balance >= currentPrice;
 
-        // 更新升级按钮状态
         if (this.upgradeButtonNode) {
             const button = this.upgradeButtonNode.getComponent(Button);
             const sprite = this.upgradeButtonNode.getComponent(Sprite);
 
             if (button) {
-                // 余额不足时禁用交互
                 button.interactable = canAfford;
             }
 
             if (sprite) {
                 if (canAfford) {
-                    // 余额充足：恢复原始颜色
                     if (this._upgradeButtonOriginalColor) {
                         sprite.color = this._upgradeButtonOriginalColor;
                     }
                 } else {
-                    // 余额不足：置灰
                     sprite.color = this.GRAY_COLOR;
                 }
             }
         }
 
-        // 广告按钮始终保持原色，不受余额影响
         if (this.adButtonNode) {
             const adButton = this.adButtonNode.getComponent(Button);
             if (adButton) {
-                // 广告按钮始终可交互
                 adButton.interactable = true;
             }
         }

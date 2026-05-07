@@ -132,7 +132,7 @@ export class GameManager {
      * @returns 动画时长
      */
     getAnimDuration(): number {
-        const speed = this._playerData.getUpgradeValue('animSpeed');
+        const speed = this._playerData.getUpgradeValue('speed');
         return speed;
     }
 
@@ -141,7 +141,7 @@ export class GameManager {
      * @returns 持续时间
      */
     getAutoDuration(): number {
-        return this._playerData.getUpgradeValue('autoDuration');
+        return this._playerData.getUpgradeValue('time');
     }
 
     /**
@@ -207,7 +207,7 @@ export class GameManager {
      */
     private judgeHeadOrTail(): boolean {
         // 获取当前正面概率（升级后的值）
-        const headProb = this._playerData.getUpgradeValue('headProb') / 100;
+        const headProb = this._playerData.getUpgradeValue('lucky') / 100;
 
         // 检查是否达到保底
         const pityThreshold = this._playerData.getUpgradeValue('pity');
@@ -303,7 +303,7 @@ export class GameManager {
      * @returns 是否暴击
      */
     private judgeCrit(): boolean {
-        const critRate = this._playerData.getUpgradeValue('critRate') / 100;
+        const critRate = this._playerData.getUpgradeValue('critical') / 100;
         if (critRate <= 0) return false;
         
         const random = Math.random();
@@ -319,7 +319,7 @@ export class GameManager {
      */
     private calculateScore(isCrit: boolean, streak: number): number {
         const value = this._playerData.getUpgradeValue('value');
-        const critBonus = isCrit ? this._playerData.getUpgradeValue('critBonus') : 0;
+        const critBonus = isCrit ? this._playerData.getUpgradeValue('criticalBonus') : 0;
         const streakBonus = this._playerData.getUpgradeValue('streakBonus');
 
         const score = value + critBonus + (streakBonus * streak);
@@ -406,7 +406,7 @@ export class GameManager {
 
     /**
      * 开始自动翻转
-     * 持续时间为"自动持续时间"升级项的值
+     * 持续时间为"自动时间"升级项的值
      */
     startAutoFlip(): void {
         if (this._isAutoFlipping) {

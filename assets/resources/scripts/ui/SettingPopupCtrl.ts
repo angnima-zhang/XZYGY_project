@@ -3,24 +3,39 @@
  * 
  * 功能说明：
  * - 管理设置弹窗的显示/隐藏
- * - 控制背景音乐开关
- * - 控制音效开关
- * - 控制震动开关
+ * - 控制背景音乐开关（on/off 节点切换显示）
+ * - 控制音效开关（on/off 节点切换显示）
+ * - 控制震动开关（on/off 节点切换显示）
  * - 设置数据持久化（使用 localStorage）
  * 
  * 场景节点对应：
- * - SettingPopup 根节点
+ * - MainPage/SettingPopup（挂载此脚本）
+ *   ├── mask: 遮罩层（点击不关闭）
  *   ├── bg: 背景
- *   ├── btn_close: 关闭按钮
- *   ├── toggle_music: 音乐开关（包含 Label 显示开关状态）
- *   ├── toggle_sound: 音效开关
- *   └── toggle_vibrate: 震动开关
+ *   ├── title: 标题栏
+ *   │   ├── Label: "设置" 文字
+ *   │   └── icon: 图标
+ *   ├── music: 音乐开关
+ *   │   ├── on: 开启状态图标（开启时显示）
+ *   │   ├── off: 关闭状态图标（开启时隐藏）
+ *   │   └── Label: "音乐" 文字
+ *   ├── sfx: 音效开关
+ *   │   ├── on-001: 开启状态图标
+ *   │   ├── off-001: 关闭状态图标
+ *   │   └── Label: "音效" 文字
+ *   ├── vib: 震动开关
+ *   │   ├── 像素-声音开: 开启状态图标
+ *   │   ├── on: 开启状态图标
+ *   │   ├── off: 关闭状态图标
+ *   │   └── Label: "震动" 文字
+ *   └── close: 关闭按钮
+ *       └── Label: "关闭" 文字
  * 
  * 使用方式：
- * 将此脚本挂载到 SettingPopup 根节点上，配置各节点引用
+ * 将此脚本挂载到 MainPage/SettingPopup 根节点上，配置各节点引用
  */
 
-import { _decorator, Component, Node, Label, tween, Vec3, UIOpacity } from 'cc';
+import { _decorator, Component, Node } from 'cc';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -43,44 +58,26 @@ export class SettingPopupCtrl extends Component {
     /**
      * 关闭按钮节点
      */
-    @property({ type: Node, displayName: '关闭按钮', tooltip: 'btn_close 节点' })
+    @property({ type: Node, displayName: '关闭按钮', tooltip: 'SettingPopup/close 节点' })
     closeBtnNode: Node | null = null;
 
     /**
      * 音乐开关节点
      */
-    @property({ type: Node, displayName: '音乐开关', tooltip: 'toggle_music 节点' })
+    @property({ type: Node, displayName: '音乐开关', tooltip: 'SettingPopup/music 节点' })
     musicToggleNode: Node | null = null;
 
     /**
      * 音效开关节点
      */
-    @property({ type: Node, displayName: '音效开关', tooltip: 'toggle_sound 节点' })
+    @property({ type: Node, displayName: '音效开关', tooltip: 'SettingPopup/sfx 节点' })
     soundToggleNode: Node | null = null;
 
     /**
      * 震动开关节点
      */
-    @property({ type: Node, displayName: '震动开关', tooltip: 'toggle_vibrate 节点' })
+    @property({ type: Node, displayName: '震动开关', tooltip: 'SettingPopup/vib 节点' })
     vibrateToggleNode: Node | null = null;
-
-    /**
-     * 音乐状态显示 Label
-     */
-    @property({ type: Label, displayName: '音乐状态', tooltip: 'toggle_music 下的状态 Label' })
-    musicStatusLabel: Label | null = null;
-
-    /**
-     * 音效状态显示 Label
-     */
-    @property({ type: Label, displayName: '音效状态', tooltip: 'toggle_sound 下的状态 Label' })
-    soundStatusLabel: Label | null = null;
-
-    /**
-     * 震动状态显示 Label
-     */
-    @property({ type: Label, displayName: '震动状态', tooltip: 'toggle_vibrate 下的状态 Label' })
-    vibrateStatusLabel: Label | null = null;
 
     /**
      * 本地存储的键名
@@ -136,6 +133,13 @@ export class SettingPopupCtrl extends Component {
     }
 
     /**
+     * 组件启用时调用
+     */
+    onEnable() {
+        this.refreshUI();
+    }
+
+    /**
      * 组件销毁时调用
      * 清理事件监听
      */
@@ -156,32 +160,23 @@ export class SettingPopupCtrl extends Component {
 
     /**
      * 显示设置弹窗
-     * 带有渐入动画
      */
     show(): void {
         if (this._isShowing) return;
 
         this._isShowing = true;
         this.node.active = true;
-
-        // 刷新 UI 显示
         this.refreshUI();
-
-        // 播放渐入动画
-        this.playShowAnimation();
     }
 
     /**
      * 隐藏设置弹窗
-     * 带有渐出动画
      */
     hide(): void {
         if (!this._isShowing) return;
 
         this._isShowing = false;
-
-        // 播放渐出动画
-        this.playHideAnimation();
+        this.node.active = false;
     }
 
     /**
@@ -229,72 +224,32 @@ export class SettingPopupCtrl extends Component {
     }
 
     /**
-     * 刷新所有 UI 显示
+     * 刷新所有 UI 显示（切换 on/off 节点的显示/隐藏）
      */
     private refreshUI(): void {
-        // 更新音乐状态显示
-        if (this.musicStatusLabel) {
-            this.musicStatusLabel.string = this._settings.musicEnabled ? '开' : '关';
+        // 更新音乐开关状态（切换 on/off 节点）
+        if (this.musicToggleNode) {
+            const onNode = this.musicToggleNode.getChildByName('on');
+            const offNode = this.musicToggleNode.getChildByName('off');
+            if (onNode) onNode.active = this._settings.musicEnabled;
+            if (offNode) offNode.active = !this._settings.musicEnabled;
         }
 
-        // 更新音效状态显示
-        if (this.soundStatusLabel) {
-            this.soundStatusLabel.string = this._settings.soundEnabled ? '开' : '关';
+        // 更新音效开关状态
+        if (this.soundToggleNode) {
+            const onNode = this.soundToggleNode.getChildByName('on-001');
+            const offNode = this.soundToggleNode.getChildByName('off-001');
+            if (onNode) onNode.active = this._settings.soundEnabled;
+            if (offNode) offNode.active = !this._settings.soundEnabled;
         }
 
-        // 更新震动状态显示
-        if (this.vibrateStatusLabel) {
-            this.vibrateStatusLabel.string = this._settings.vibrateEnabled ? '开' : '关';
+        // 更新震动开关状态
+        if (this.vibrateToggleNode) {
+            const onNode = this.vibrateToggleNode.getChildByName('on');
+            const offNode = this.vibrateToggleNode.getChildByName('off');
+            if (onNode) onNode.active = this._settings.vibrateEnabled;
+            if (offNode) offNode.active = !this._settings.vibrateEnabled;
         }
-    }
-
-    /**
-     * 播放显示动画
-     * 缩放 + 淡入效果
-     */
-    private playShowAnimation(): void {
-        // 初始状态：缩小 + 透明
-        this.node.setScale(new Vec3(0.8, 0.8, 1));
-        
-        let opacity = this.node.getComponent(UIOpacity);
-        if (!opacity) {
-            opacity = this.node.addComponent(UIOpacity);
-        }
-        opacity.opacity = 0;
-
-        // 缩放动画
-        tween(this.node)
-            .to(0.3, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
-            .start();
-
-        // 透明度动画
-        tween(opacity)
-            .to(0.3, { opacity: 255 })
-            .start();
-    }
-
-    /**
-     * 播放隐藏动画
-     * 缩放 + 淡出效果
-     */
-    private playHideAnimation(): void {
-        let opacity = this.node.getComponent(UIOpacity);
-        if (!opacity) {
-            opacity = this.node.addComponent(UIOpacity);
-        }
-
-        // 缩放动画
-        tween(this.node)
-            .to(0.2, { scale: new Vec3(0.9, 0.9, 1) })
-            .call(() => {
-                this.node.active = false;
-            })
-            .start();
-
-        // 透明度动画
-        tween(opacity)
-            .to(0.2, { opacity: 0 })
-            .start();
     }
 
     /**
@@ -329,7 +284,6 @@ export class SettingPopupCtrl extends Component {
 
     /**
      * 获取音乐是否开启
-     * @returns 是否开启
      */
     isMusicEnabled(): boolean {
         return this._settings.musicEnabled;
@@ -337,7 +291,6 @@ export class SettingPopupCtrl extends Component {
 
     /**
      * 获取音效是否开启
-     * @returns 是否开启
      */
     isSoundEnabled(): boolean {
         return this._settings.soundEnabled;
@@ -345,7 +298,6 @@ export class SettingPopupCtrl extends Component {
 
     /**
      * 获取震动是否开启
-     * @returns 是否开启
      */
     isVibrateEnabled(): boolean {
         return this._settings.vibrateEnabled;

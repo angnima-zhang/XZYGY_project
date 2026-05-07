@@ -10,14 +10,16 @@
  * - MainPage/UpgradeSection/auto（挂载此脚本）
  *   ├── bg: 背景
  *   ├── icon: 图标
- *   ├── title: 标题（自动翻转）
- *   ├── price: 价格
- *   ├── button: 购买按钮
- *   └── button_ad: 广告按钮
+ *   ├── name: 标题（自动翻转）
+ *   ├── currentValue: 当前自动时间值
+ *   ├── buy: 购买按钮
+ *   ├── ad: 广告按钮
+ *   └── vfx: 特效（非激活）
  */
 
 import { _decorator, Component, Node, Label, Button, Sprite, Color } from 'cc';
 import { GameManager } from '../core/GameManager';
+import { NumberFormatter } from '../utils/NumberFormatter';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -31,27 +33,31 @@ export class AutoFlipBuyCtrl extends Component {
     /**
      * 标题 Label 节点
      */
-    @property({ type: Label, displayName: '标题', tooltip: 'title 节点的 Label 组件' })
+    @property({ type: Label, displayName: '标题', tooltip: 'name 节点的 Label 组件' })
     titleLabel: Label | null = null;
+
+    /**
+     * 当前值 Label 节点
+     */
+    @property({ type: Label, displayName: '当前值', tooltip: 'currentValue 节点的 Label 组件' })
+    currentValueLabel: Label | null = null;
 
     /**
      * 价格 Label 节点
      */
-    @property({ type: Label, displayName: '价格', tooltip: 'price 节点的 Label 组件' })
+    @property({ type: Label, displayName: '价格', tooltip: 'buy 节点下的 Label 组件' })
     priceLabel: Label | null = null;
 
     /**
      * 购买按钮节点（余额购买）
-     * 余额不足时会置灰
      */
-    @property({ type: Node, displayName: '购买按钮（余额）', tooltip: '余额购买按钮节点' })
+    @property({ type: Node, displayName: '购买按钮（余额）', tooltip: 'buy 按钮节点' })
     buyButtonNode: Node | null = null;
 
     /**
      * 广告按钮节点（看广告免费自动翻转）
-     * 始终保持原色，不受余额影响
      */
-    @property({ type: Node, displayName: '广告按钮', tooltip: '广告按钮节点（保持原色）' })
+    @property({ type: Node, displayName: '广告按钮', tooltip: 'ad 按钮节点（保持原色）' })
     adButtonNode: Node | null = null;
 
     /**
@@ -71,7 +77,6 @@ export class AutoFlipBuyCtrl extends Component {
 
     /**
      * 组件加载时调用
-     * 初始化组件引用和事件监听
      */
     onLoad() {
         this._gameManager = GameManager.getInstance();
@@ -90,7 +95,6 @@ export class AutoFlipBuyCtrl extends Component {
             this.buyButtonNode.on(Node.EventType.TOUCH_END, this.onBuyClick, this);
         }
 
-        // 绑定广告按钮点击事件
         if (this.adButtonNode) {
             this.adButtonNode.on(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
         }
@@ -100,7 +104,6 @@ export class AutoFlipBuyCtrl extends Component {
 
     /**
      * 组件启用时调用
-     * 刷新 UI 显示
      */
     onEnable() {
         this.refreshUI();
@@ -108,7 +111,6 @@ export class AutoFlipBuyCtrl extends Component {
 
     /**
      * 组件销毁时调用
-     * 清理事件监听
      */
     onDestroy() {
         if (this.buyButtonNode) {
@@ -131,7 +133,8 @@ export class AutoFlipBuyCtrl extends Component {
             return;
         }
 
-        const price = this._gameManager.getUpgradeValue('autoDuration');
+        // 价格是 time 升级项的当前价格
+        const price = this._gameManager.getUpgradePrice('time');
         const balance = this._gameManager.getBalance();
 
         if (balance < price) {
@@ -155,12 +158,7 @@ export class AutoFlipBuyCtrl extends Component {
      */
     private onAdButtonClick(): void {
         console.log('[AutoFlipBuyCtrl] 广告按钮点击，准备播放广告...');
-
         // TODO: 实现广告播放逻辑
-        // 1. 检查广告是否可用
-        // 2. 播放激励视频广告
-        // 3. 广告播放成功后免费启动自动翻转
-        // 4. 刷新 UI
     }
 
     /**
@@ -169,39 +167,42 @@ export class AutoFlipBuyCtrl extends Component {
     private refreshUI(): void {
         if (!this._gameManager) return;
 
-        // 更新价格显示
+        this.updateValueDisplay();
         this.updatePriceDisplay();
-
-        // 更新按钮状态
         this.updateButtonState();
     }
 
     /**
+     * 更新当前值显示（自动时间值）
+     */
+    private updateValueDisplay(): void {
+        if (!this.currentValueLabel || !this._gameManager) return;
+
+        const value = this._gameManager.getUpgradeValue('time');
+        this.currentValueLabel.string = NumberFormatter.formatTime(value);
+    }
+
+    /**
      * 更新价格显示
-     * 价格是 autoDuration 升级项的当前值
      */
     private updatePriceDisplay(): void {
         if (!this.priceLabel || !this._gameManager) return;
 
-        const price = this._gameManager.getUpgradeValue('autoDuration');
+        const price = this._gameManager.getUpgradePrice('time');
         this.priceLabel.string = `${price}`;
     }
 
     /**
      * 更新按钮状态
-     * 余额不足时：
-     * - 购买按钮置灰并禁用
-     * - 广告按钮保持原色
      */
     private updateButtonState(): void {
         if (!this._gameManager) return;
 
-        const price = this._gameManager.getUpgradeValue('autoDuration');
+        const price = this._gameManager.getUpgradePrice('time');
         const balance = this._gameManager.getBalance();
         const canAfford = balance >= price;
         const isAutoFlipping = this._gameManager.isAutoFlipping();
 
-        // 更新购买按钮状态
         if (this.buyButtonNode) {
             const button = this.buyButtonNode.getComponent(Button);
             const sprite = this.buyButtonNode.getComponent(Sprite);
@@ -221,7 +222,6 @@ export class AutoFlipBuyCtrl extends Component {
             }
         }
 
-        // 广告按钮始终保持原色
         if (this.adButtonNode) {
             const adButton = this.adButtonNode.getComponent(Button);
             if (adButton) {
