@@ -6,6 +6,7 @@
  * - 播放抛硬币动画（Y轴旋转模拟翻转）
  * - 根据 GameManager 的结果显示正/反面
  * - 显示飘字效果（得分、暴击、连击等）
+ * - 翻转时禁用除设置按钮外的所有按钮并置灰
  * 
  * 动画流程：
  * 1. 用户点击硬币 -> 触发翻转动画
@@ -27,12 +28,21 @@
  * 将此脚本挂载到 Coin 节点上即可
  */
 
-import { _decorator, Component, Node, Label, Sprite, Tween, tween, Vec3, UIOpacity, Color } from 'cc';
+import { _decorator, Component, Node, Label, Sprite, Tween, tween, Vec3, UIOpacity, Color, Button } from 'cc';
 import { GameManager, FlipResult } from '../core/GameManager';
 import { VfxManager } from './VfxManager';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
+
+/**
+ * 按钮状态缓存
+ */
+interface ButtonState {
+    node: Node;
+    interactable: boolean;
+    color: Color;
+}
 
 @ccclass('CoinController')
 export class CoinController extends Component {
@@ -108,6 +118,16 @@ export class CoinController extends Component {
      * 暴击计数（用于显示）
      */
     private _critCountDisplay: number = 0;
+
+    /**
+     * 按钮状态缓存列表
+     */
+    private _buttonStates: ButtonState[] = [];
+
+    /**
+     * 置灰颜色
+     */
+    private readonly GRAY_COLOR = new Color(128, 128, 128, 255);
 
     /**
      * 组件加载时调用
@@ -186,6 +206,9 @@ export class CoinController extends Component {
     private playFlipAnimation(): void {
         this._isAnimating = true;
 
+        // 禁用除设置按钮外的所有按钮并置灰
+        this.disableAllButtons();
+
         // 获取动画时长（从 GameManager 获取）
         const duration = this._gameManager.getAnimDuration();
 
@@ -238,7 +261,77 @@ export class CoinController extends Component {
             this.showWinEffect();
         }
 
+        // 恢复所有按钮
+        this.enableAllButtons();
+
         this._isAnimating = false;
+    }
+
+    /**
+     * 禁用所有按钮（除设置按钮外）并置灰
+     */
+    private disableAllButtons(): void {
+        this._buttonStates = [];
+
+        // 从 Canvas 开始查找所有按钮
+        const canvas = this.node.scene.getChildByName('Canvas');
+        if (!canvas) return;
+
+        this.collectAndDisableButtons(canvas);
+    }
+
+    /**
+     * 递归收集并禁用按钮
+     */
+    private collectAndDisableButtons(node: Node): void {
+        // 跳过设置按钮
+        if (node.name === 'button_setting' || node.name === 'close') {
+            return;
+        }
+
+        // 检查是否有 Button 组件
+        const button = node.getComponent(Button);
+        if (button) {
+            const sprite = node.getComponent(Sprite);
+            const originalColor = sprite ? sprite.color.clone() : new Color(255, 255, 255, 255);
+
+            // 缓存原始状态
+            this._buttonStates.push({
+                node: node,
+                interactable: button.interactable,
+                color: originalColor
+            });
+
+            // 禁用按钮并置灰
+            button.interactable = false;
+            if (sprite) {
+                sprite.color = this.GRAY_COLOR;
+            }
+        }
+
+        // 递归处理子节点
+        node.children.forEach(child => {
+            this.collectAndDisableButtons(child);
+        });
+    }
+
+    /**
+     * 恢复所有按钮
+     */
+    private enableAllButtons(): void {
+        this._buttonStates.forEach(state => {
+            const button = state.node.getComponent(Button);
+            if (button) {
+                button.interactable = state.interactable;
+            }
+
+            const sprite = state.node.getComponent(Sprite);
+            if (sprite) {
+                sprite.color = state.color;
+            }
+        });
+
+        this._buttonStates = [];
     }
 
     /**

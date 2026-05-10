@@ -52,7 +52,7 @@
     },
     "autoReleaseAssets": false,
     "_globals": {
-      "__id__": 1229
+      "__id__": 1232
     },
     "_id": "52dabc35-17fd-43ed-8baf-6acef656d086"
   },
@@ -103,6 +103,15 @@
       },
       {
         "__id__": 1228
+      },
+      {
+        "__id__": 1229
+      },
+      {
+        "__id__": 1230
+      },
+      {
+        "__id__": 1231
       }
     ],
     "_prefab": null,
@@ -15534,7 +15543,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 3.305,
+      "y": 8.831,
       "z": 0
     },
     "_lrot": {
@@ -15573,7 +15582,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 100,
-      "height": 40
+      "height": 60
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -15605,14 +15614,17 @@
     "_string": "关闭",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 40,
-    "_fontSize": 40,
+    "_actualFontSize": 46,
+    "_fontSize": 60,
     "_fontFamily": "Arial",
-    "_lineHeight": 40,
-    "_overflow": 1,
+    "_lineHeight": 60,
+    "_overflow": 2,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "22746329-fda3-44c6-a5cb-1108cf9282ef",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
     "_isBold": false,
@@ -48013,30 +48025,78 @@
     "_id": "f9NjgJr/RFn6VqlEPhDDpY"
   },
   {
+    "__type__": "9462dwqLFNNSprWQ6WuB5/X",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 2
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "settingButton": null,
+    "shopButton": null,
+    "statusButton": null,
+    "upgradeSectionMain": null,
+    "_id": "fdEbinM2JOIpMpePHqIFHG"
+  },
+  {
+    "__type__": "9462dwqLFNNSprWQ6WuB5/X",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 2
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "settingButton": null,
+    "shopButton": null,
+    "statusButton": null,
+    "upgradeSectionMain": null,
+    "_id": "f8BRpn2w9Ivqf+/Gi2pqho"
+  },
+  {
+    "__type__": "9462dwqLFNNSprWQ6WuB5/X",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 2
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "settingButton": null,
+    "shopButton": null,
+    "statusButton": null,
+    "upgradeSectionMain": null,
+    "_id": "63mhSfmTdLI48wRGLcfsv/"
+  },
+  {
     "__type__": "cc.SceneGlobals",
     "ambient": {
-      "__id__": 1230
-    },
-    "shadows": {
-      "__id__": 1231
-    },
-    "_skybox": {
-      "__id__": 1232
-    },
-    "fog": {
       "__id__": 1233
     },
-    "octree": {
+    "shadows": {
       "__id__": 1234
     },
-    "skin": {
+    "_skybox": {
       "__id__": 1235
     },
-    "lightProbeInfo": {
+    "fog": {
       "__id__": 1236
     },
-    "postSettings": {
+    "octree": {
       "__id__": 1237
+    },
+    "skin": {
+      "__id__": 1238
+    },
+    "lightProbeInfo": {
+      "__id__": 1239
+    },
+    "postSettings": {
+      "__id__": 1240
     },
     "bakedWithStationaryMainLight": false,
     "bakedWithHighpLightmap": false
