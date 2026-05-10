@@ -141,9 +141,6 @@ export class UpgradeItemCtrl extends Component {
     onLoad() {
         this._gameManager = GameManager.getInstance();
 
-        // 初始化标题
-        this.updateTitle();
-
         // 缓存升级按钮的原始颜色
         if (this.upgradeButtonNode) {
             const sprite = this.upgradeButtonNode.getComponent(Sprite);
