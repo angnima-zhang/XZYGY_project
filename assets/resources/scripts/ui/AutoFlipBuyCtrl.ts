@@ -81,11 +81,6 @@ export class AutoFlipBuyCtrl extends Component {
     onLoad() {
         this._gameManager = GameManager.getInstance();
 
-        // 初始化标题
-        if (this.titleLabel) {
-            this.titleLabel.string = '自动翻转';
-        }
-
         // 缓存购买按钮的原始颜色
         if (this.buyButtonNode) {
             const sprite = this.buyButtonNode.getComponent(Sprite);
