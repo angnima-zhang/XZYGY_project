@@ -111,6 +111,11 @@ export class StatusPageCtrl extends Component {
     private _gameManager: GameManager | null = null;
 
     /**
+     * 记录初始 X 坐标（固定值，避免 Widget 组件影响）
+     */
+    private _originalX: number = -720;
+
+    /**
      * 组件加载时调用
      */
     onLoad() {
@@ -121,17 +126,16 @@ export class StatusPageCtrl extends Component {
             this.backBtnNode.on(Node.EventType.TOUCH_END, this.onBackClick, this);
         }
 
-        // 初始隐藏
-        this.node.active = false;
-
-        console.log('[StatusPageCtrl] 初始化完成');
+        // 记录初始 X 位置，不再通过 active 控制显示/隐藏
+        this._originalX = this.node.position.x;
+        console.log('[StatusPageCtrl] 初始化完成，初始 X:', this._originalX);
     }
 
     /**
      * 组件销毁时调用
      */
     onDestroy() {
-        if (this.backBtnNode) {
+        if (this.backBtnNode && this.backBtnNode.isValid) {
             this.backBtnNode.off(Node.EventType.TOUCH_END, this.onBackClick, this);
         }
     }
@@ -140,22 +144,29 @@ export class StatusPageCtrl extends Component {
      * 返回按钮点击事件处理
      */
     private onBackClick(): void {
+        console.log('[StatusPageCtrl] onBackClick 被调用');
         this.hide();
     }
 
     /**
-     * 显示状态页面
+     * 显示状态页面（X 坐标归零）
      */
     show(): void {
-        this.node.active = true;
+        console.log('[StatusPageCtrl] show() 被调用');
+        console.log('[StatusPageCtrl] 设置 X = 0');
+        this.node.setPosition(0, 0, 0);
         this.refreshUI();
+        console.log('[StatusPageCtrl] show() 完成');
     }
 
     /**
-     * 隐藏状态页面
+     * 隐藏状态页面（恢复初始 X 坐标）
      */
     hide(): void {
-        this.node.active = false;
+        console.log('[StatusPageCtrl] hide() 被调用');
+        console.log('[StatusPageCtrl] 恢复 X:', this._originalX);
+        this.node.setPosition(this._originalX, 0, 0);
+        console.log('[StatusPageCtrl] hide() 完成');
     }
 
     /**

@@ -258,34 +258,62 @@ export class MainSceneController extends Component {
      * 显示升级页面
      */
     private showUpgradePage(): void {
+        log('[MainSceneController] showUpgradePage 被调用');
+        log('[MainSceneController] 当前页面:', this._currentPage);
+        log('[MainSceneController] upgradePage引用:', this.upgradePage ? '已配置' : '未配置');
+        log('[MainSceneController] statusPage引用:', this.statusPage ? '已配置' : '未配置');
+
         this._currentPage = 'upgrade';
 
         // 隐藏其他页面
         if (this.statusPage) {
+            log('[MainSceneController] 隐藏 StatusPage');
             this.statusPage.hide();
+        } else {
+            log('[MainSceneController] ⚠️ statusPage为null，跳过');
         }
 
         // 显示升级页面
         if (this.upgradePage) {
+            log('[MainSceneController] 调用 upgradePage.show()');
             this.upgradePage.show();
+            log('[MainSceneController] upgradePage.show() 调用完成');
+        } else {
+            log('[MainSceneController] ❌ upgradePage为null，无法显示升级页面');
         }
+        
+        log('[MainSceneController] showUpgradePage 完成');
     }
 
     /**
      * 显示状态页面
      */
     private showStatusPage(): void {
+        log('[MainSceneController] showStatusPage 被调用');
+        log('[MainSceneController] 当前页面:', this._currentPage);
+        log('[MainSceneController] upgradePage引用:', this.upgradePage ? '已配置' : '未配置');
+        log('[MainSceneController] statusPage引用:', this.statusPage ? '已配置' : '未配置');
+
         this._currentPage = 'status';
 
         // 隐藏其他页面
         if (this.upgradePage) {
+            log('[MainSceneController] 隐藏 UpgradePage');
             this.upgradePage.hide();
+        } else {
+            log('[MainSceneController] ⚠️ upgradePage为null，跳过');
         }
 
         // 显示状态页面
         if (this.statusPage) {
+            log('[MainSceneController] 调用 statusPage.show()');
             this.statusPage.show();
+            log('[MainSceneController] statusPage.show() 调用完成');
+        } else {
+            log('[MainSceneController] ❌ statusPage为null，无法显示状态页面');
         }
+        
+        log('[MainSceneController] showStatusPage 完成');
     }
 
     /**
