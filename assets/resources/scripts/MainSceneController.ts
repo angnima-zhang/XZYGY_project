@@ -15,7 +15,7 @@
  * └── Toast（提示弹窗，非激活）
  */
 
-import { _decorator, Component, Node, Label, log } from 'cc';
+import { _decorator, Component, Node, Label, log, Button } from 'cc';
 import { GameManager } from './core/GameManager';
 import { AudioManager } from './core/AudioManager';
 import { VfxManager } from './ui/VfxManager';
@@ -108,10 +108,23 @@ export class MainSceneController extends Component {
             log('[MainSceneController] 警告: 未找到 VFX 管理器');
         }
 
-        // 4. 绑定按钮事件
+        // 4. 查找 SettingPopup 组件
+        if (!this.settingPopup) {
+            const settingPopupNode = this.node.getChildByName('MainPage')?.getChildByName('SettingPopup');
+            if (settingPopupNode) {
+                this.settingPopup = settingPopupNode.getComponent(SettingPopupCtrl);
+                log('[MainSceneController] 自动查找并绑定 SettingPopup 组件');
+            } else {
+                log('[MainSceneController] ⚠️ 未找到 SettingPopup 节点');
+            }
+        } else {
+            log('[MainSceneController] SettingPopup 组件已配置');
+        }
+
+        // 5. 绑定按钮事件
         this.bindButtonEvents();
 
-        // 5. 设置初始页面状态
+        // 6. 设置初始页面状态
         this.showMainPage();
 
         log('[MainSceneController] 初始化完成！');
@@ -122,14 +135,27 @@ export class MainSceneController extends Component {
      * 清理事件监听
      */
     onDestroy() {
-        if (this.settingBtnNode) {
-            this.settingBtnNode.off(Node.EventType.TOUCH_END, this.onSettingClick, this);
-        }
-        if (this.upgradeBtnNode) {
-            this.upgradeBtnNode.off(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
-        }
-        if (this.statusBtnNode) {
-            this.statusBtnNode.off(Node.EventType.TOUCH_END, this.onStatusClick, this);
+        try {
+            if (this.settingBtnNode && this.settingBtnNode.isValid) {
+                const btn = this.settingBtnNode.getComponent(Button);
+                if (btn && btn.node && btn.node.isValid) {
+                    btn.node.off(Button.EventType.CLICK, this.onSettingClick, this);
+                }
+            }
+            if (this.upgradeBtnNode && this.upgradeBtnNode.isValid) {
+                const btn = this.upgradeBtnNode.getComponent(Button);
+                if (btn && btn.node && btn.node.isValid) {
+                    btn.node.off(Button.EventType.CLICK, this.onUpgradeClick, this);
+                }
+            }
+            if (this.statusBtnNode && this.statusBtnNode.isValid) {
+                const btn = this.statusBtnNode.getComponent(Button);
+                if (btn && btn.node && btn.node.isValid) {
+                    btn.node.off(Button.EventType.CLICK, this.onStatusClick, this);
+                }
+            }
+        } catch (e) {
+            console.warn('[MainSceneController] onDestroy cleanup error:', e);
         }
     }
 
@@ -137,15 +163,41 @@ export class MainSceneController extends Component {
      * 绑定所有按钮事件
      */
     private bindButtonEvents(): void {
+        log('[MainSceneController] 开始绑定按钮事件...');
+        
         if (this.settingBtnNode) {
-            this.settingBtnNode.on(Node.EventType.TOUCH_END, this.onSettingClick, this);
+            log('[MainSceneController] 找到设置按钮节点');
+            const btn = this.settingBtnNode.getComponent(Button);
+            if (btn) {
+                log('[MainSceneController] 设置按钮Button组件存在，绑定事件');
+                btn.node.on(Button.EventType.CLICK, this.onSettingClick, this);
+            } else {
+                log('[MainSceneController] ⚠️ 设置按钮没有Button组件');
+            }
+        } else {
+            log('[MainSceneController] ⚠️ 设置按钮节点为空');
         }
+        
         if (this.upgradeBtnNode) {
-            this.upgradeBtnNode.on(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
+            log('[MainSceneController] 找到升级按钮节点');
+            const btn = this.upgradeBtnNode.getComponent(Button);
+            if (btn) {
+                log('[MainSceneController] 升级按钮Button组件存在，绑定事件');
+                btn.node.on(Button.EventType.CLICK, this.onUpgradeClick, this);
+            }
         }
+        
         if (this.statusBtnNode) {
-            this.statusBtnNode.on(Node.EventType.TOUCH_END, this.onStatusClick, this);
+            log('[MainSceneController] 找到状态按钮节点');
+            const btn = this.statusBtnNode.getComponent(Button);
+            if (btn) {
+                log('[MainSceneController] 状态按钮Button组件存在，绑定事件');
+                btn.node.on(Button.EventType.CLICK, this.onStatusClick, this);
+            }
         }
+        
+        log('[MainSceneController] settingPopup引用:', this.settingPopup ? '已配置' : '未配置');
+        log('[MainSceneController] 按钮事件绑定完成');
     }
 
     /**
@@ -240,8 +292,15 @@ export class MainSceneController extends Component {
      * 显示设置弹窗
      */
     private showSettingPopup(): void {
+        log('[MainSceneController] showSettingPopup 被调用');
+        log('[MainSceneController] settingPopup值:', this.settingPopup);
+        
         if (this.settingPopup) {
+            log('[MainSceneController] 调用 settingPopup.show()');
             this.settingPopup.show();
+            log('[MainSceneController] settingPopup.show() 调用完成');
+        } else {
+            log('[MainSceneController] ❌ settingPopup为null，无法显示弹窗');
         }
     }
 

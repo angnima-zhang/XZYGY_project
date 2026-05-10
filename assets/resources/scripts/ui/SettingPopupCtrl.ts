@@ -126,9 +126,6 @@ export class SettingPopupCtrl extends Component {
             this.vibrateToggleNode.on(Node.EventType.TOUCH_END, this.onVibrateToggleClick, this);
         }
 
-        // 初始隐藏
-        this.node.active = false;
-
         console.log('[SettingPopupCtrl] 初始化完成');
     }
 
@@ -146,17 +143,21 @@ export class SettingPopupCtrl extends Component {
      * 清理事件监听
      */
     onDestroy() {
-        if (this.closeBtnNode) {
-            this.closeBtnNode.off(Node.EventType.TOUCH_END, this.onCloseClick, this);
-        }
-        if (this.musicToggleNode) {
-            this.musicToggleNode.off(Node.EventType.TOUCH_END, this.onMusicToggleClick, this);
-        }
-        if (this.soundToggleNode) {
-            this.soundToggleNode.off(Node.EventType.TOUCH_END, this.onSoundToggleClick, this);
-        }
-        if (this.vibrateToggleNode) {
-            this.vibrateToggleNode.off(Node.EventType.TOUCH_END, this.onVibrateToggleClick, this);
+        try {
+            if (this.closeBtnNode && this.closeBtnNode.isValid) {
+                this.closeBtnNode.off(Node.EventType.TOUCH_END, this.onCloseClick, this);
+            }
+            if (this.musicToggleNode && this.musicToggleNode.isValid) {
+                this.musicToggleNode.off(Node.EventType.TOUCH_END, this.onMusicToggleClick, this);
+            }
+            if (this.soundToggleNode && this.soundToggleNode.isValid) {
+                this.soundToggleNode.off(Node.EventType.TOUCH_END, this.onSoundToggleClick, this);
+            }
+            if (this.vibrateToggleNode && this.vibrateToggleNode.isValid) {
+                this.vibrateToggleNode.off(Node.EventType.TOUCH_END, this.onVibrateToggleClick, this);
+            }
+        } catch (e) {
+            console.warn('[SettingPopupCtrl] onDestroy cleanup error:', e);
         }
     }
 
@@ -164,11 +165,22 @@ export class SettingPopupCtrl extends Component {
      * 显示设置弹窗
      */
     show(): void {
-        if (this._isShowing) return;
+        console.log('[SettingPopupCtrl] show() 被调用');
+        console.log('[SettingPopupCtrl] _isShowing:', this._isShowing);
+        console.log('[SettingPopupCtrl] node:', this.node);
+        console.log('[SettingPopupCtrl] node.active:', this.node ? this.node.active : 'node为空');
+        
+        if (this._isShowing) {
+            console.log('[SettingPopupCtrl] 已经在显示中，返回');
+            return;
+        }
 
         this._isShowing = true;
         this.node.active = true;
+        console.log('[SettingPopupCtrl] 设置 node.active = true 后:', this.node.active);
+        
         this.refreshUI();
+        console.log('[SettingPopupCtrl] refreshUI() 调用完成');
     }
 
     /**

@@ -171,11 +171,15 @@ export class UpgradeItemCtrl extends Component {
      * 组件销毁时调用
      */
     onDestroy() {
-        if (this.upgradeButtonNode) {
-            this.upgradeButtonNode.off(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
-        }
-        if (this.adButtonNode) {
-            this.adButtonNode.off(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
+        try {
+            if (this.upgradeButtonNode && this.upgradeButtonNode.isValid) {
+                this.upgradeButtonNode.off(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
+            }
+            if (this.adButtonNode && this.adButtonNode.isValid) {
+                this.adButtonNode.off(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
+            }
+        } catch (e) {
+            console.warn('[UpgradeItemCtrl] onDestroy cleanup error:', e);
         }
     }
 

@@ -113,11 +113,15 @@ export class AutoFlipBuyCtrl extends Component {
      * 组件销毁时调用
      */
     onDestroy() {
-        if (this.buyButtonNode) {
-            this.buyButtonNode.off(Node.EventType.TOUCH_END, this.onBuyClick, this);
-        }
-        if (this.adButtonNode) {
-            this.adButtonNode.off(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
+        try {
+            if (this.buyButtonNode && this.buyButtonNode.isValid) {
+                this.buyButtonNode.off(Node.EventType.TOUCH_END, this.onBuyClick, this);
+            }
+            if (this.adButtonNode && this.adButtonNode.isValid) {
+                this.adButtonNode.off(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
+            }
+        } catch (e) {
+            console.warn('[AutoFlipBuyCtrl] onDestroy cleanup error:', e);
         }
     }
 
