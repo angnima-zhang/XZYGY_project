@@ -136,6 +136,8 @@ export class SettingPopupCtrl extends Component {
      * 组件启用时调用
      */
     onEnable() {
+        // 编辑器预览时节点可能未配置，跳过刷新
+        if (!this.musicToggleNode && !this.soundToggleNode && !this.vibrateToggleNode) return;
         this.refreshUI();
     }
 

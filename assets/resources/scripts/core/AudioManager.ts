@@ -114,6 +114,9 @@ export class AudioManager {
     /** 当前正在播放的 BGM 路径 */
     private _currentBgmPath: string = '';
 
+    /** BGM 是否等待用户交互后才播放（浏览器自动播放限制） */
+    private _bgmPendingInteraction: boolean = false;
+
     /** 私有构造函数 */
     private constructor() {
         this.loadSettings();
@@ -157,6 +160,8 @@ export class AudioManager {
             }
             this._bgmCache = { clip: clip, loaded: true };
             console.log('[AudioManager] BGM 加载成功');
+            // 加载完成后立即播放
+            this.playBGM();
         });
 
         // 预加载所有音效
@@ -175,6 +180,7 @@ export class AudioManager {
     /**
      * 播放背景音乐
      * 如果 BGM 正在播放，则不会重复播放
+     * 浏览器有自动播放限制，需要用户交互后才能播放
      */
     playBGM(): void {
         if (!this._bgmEnabled || !this._bgmSource) return;
@@ -184,12 +190,51 @@ export class AudioManager {
             return;
         }
 
-        // 如果 BGM 已加载，则播放
-        if (this._bgmCache.loaded && this._bgmCache.clip) {
-            this._bgmSource.clip = this._bgmCache.clip;
-            this._bgmSource.play();
+        // 如果 BGM 未加载，标记等待交互后播放
+        if (!this._bgmCache.loaded || !this._bgmCache.clip) {
+            this._bgmPendingInteraction = true;
+            this._registerFirstInteraction();
+            return;
+        }
+
+        // 尝试播放
+        this._bgmSource.clip = this._bgmCache.clip;
+        const playPromise = this._bgmSource.play();
+        
+        // 如果浏览器返回 Promise（Web 平台），检查是否被阻止
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('[AudioManager] BGM 开始播放');
+            }).catch(() => {
+                console.log('[AudioManager] 浏览器阻止自动播放，等待用户交互...');
+                this._bgmPendingInteraction = true;
+                this._registerFirstInteraction();
+            });
+        } else {
             console.log('[AudioManager] BGM 开始播放');
         }
+    }
+
+    /**
+     * 注册首次用户交互监听
+     * 浏览器要求用户点击后才能播放音频
+     */
+    private _registerFirstInteraction(): void {
+        if (!this._bgmPendingInteraction) return;
+        
+        const handler = () => {
+            // 用户交互后尝试播放 BGM
+            if (this._bgmPendingInteraction) {
+                this._bgmPendingInteraction = false;
+                this.playBGM();
+            }
+            // 移除监听
+            document.removeEventListener('click', handler);
+            document.removeEventListener('touchstart', handler);
+        };
+
+        document.addEventListener('click', handler, { once: true });
+        document.addEventListener('touchstart', handler, { once: true });
     }
 
     /**
