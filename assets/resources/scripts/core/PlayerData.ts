@@ -7,14 +7,14 @@
  * - 每日凌晨4点自动重置
  * 
  * GDD v1.2 升级项定义：
- * 1. 面值（初始值1，初始价格5，乘法增长）
- * 2. 动画速度（初始值5秒，初始价格5，除法增长）
- * 3. 正面概率（初始值50%，初始价格5，乘法增长）
- * 4. 暴击率（初始值0%，初始价格5，乘法增长）
- * 5. 暴击加成（初始值0，初始价格5，乘法增长）
- * 6. 保底（初始值20次，初始价格5，固定递减）
- * 7. 连击加成（初始值0，初始价格5，乘法增长）
- * 8. 自动持续时间（初始值10秒，初始价格5，乘法增长）
+ * 1. value（面值）- 初始值1，初始价格5，乘法增长
+ * 2. speed（速度）- 初始值5秒，初始价格5，除法增长
+ * 3. lucky（幸运/正面概率）- 初始值50%，初始价格5，乘法增长
+ * 4. critical（暴击率）- 初始值0%，初始价格5，乘法增长
+ * 5. criticalBonus（暴击加成）- 初始值0，初始价格5，乘法增长
+ * 6. pity（保底）- 初始值20次，初始价格5，固定递减
+ * 7. streakBonus（连击加成）- 初始值0，初始价格5，乘法增长
+ * 8. time（自动时间）- 初始值10秒，初始价格5，乘法增长
  * 
  * 使用方式：
  * const data = PlayerData.getInstance();
@@ -23,23 +23,23 @@
  */
 
 /**
- * 升级项类型枚举
+ * 升级项类型枚举（与场景节点名保持一致）
  */
 type UpgradeType = 
     | 'value'           // 1. 面值
-    | 'animSpeed'       // 2. 动画速度
-    | 'headProb'        // 3. 正面概率
-    | 'critRate'        // 4. 暴击率
-    | 'critBonus'       // 5. 暴击加成
+    | 'speed'           // 2. 动画速度
+    | 'lucky'           // 3. 正面概率/幸运
+    | 'critical'        // 4. 暴击率
+    | 'criticalBonus'   // 5. 暴击加成
     | 'pity'            // 6. 保底
     | 'streakBonus'     // 7. 连击加成
-    | 'autoDuration';   // 8. 自动持续时间
+    | 'time';           // 8. 自动持续时间
 
 /**
  * 升级项配置接口
  */
 interface UpgradeConfig {
-    /** 升级项名称 */
+    /** 升级项名称（显示用） */
     name: string;
     /** 初始值 */
     initialValue: number;
@@ -114,7 +114,7 @@ export class PlayerData {
     }
 
     /** 本地存储的键名 */
-    private readonly STORAGE_KEY = 'xianzheng_player_data_v2';
+    private readonly STORAGE_KEY = 'xianzheng_player_data_v3';
 
     /** 游戏目标金额（1亿） */
     readonly TARGET_BALANCE = 100_000_000;
@@ -132,23 +132,23 @@ export class PlayerData {
             growthFactor: 1.2,
             unit: ''
         },
-        animSpeed: {
-            name: '动画速度',
+        speed: {
+            name: '速度',
             initialValue: 5,
             initialPrice: 5,
             growthType: 'divide',
             growthFactor: 1.2,
             unit: '秒'
         },
-        headProb: {
-            name: '正面概率',
+        lucky: {
+            name: '幸运',
             initialValue: 50,
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
             unit: '%'
         },
-        critRate: {
+        critical: {
             name: '暴击率',
             initialValue: 0,
             initialPrice: 5,
@@ -156,7 +156,7 @@ export class PlayerData {
             growthFactor: 1.2,
             unit: '%'
         },
-        critBonus: {
+        criticalBonus: {
             name: '暴击加成',
             initialValue: 0,
             initialPrice: 5,
@@ -180,8 +180,8 @@ export class PlayerData {
             growthFactor: 1.2,
             unit: ''
         },
-        autoDuration: {
-            name: '自动持续时间',
+        time: {
+            name: '自动时间',
             initialValue: 10,
             initialPrice: 5,
             growthType: 'multiply',
@@ -470,7 +470,7 @@ export class PlayerData {
      */
     setWonToday(): void {
         this._wonToday = true;
-        console.log('[PlayerData] 🎉 今日已达到目标！');
+        console.log('[PlayerData] 今日已达到目标！');
         this.save();
     }
 
@@ -478,14 +478,13 @@ export class PlayerData {
 
     /**
      * 计算每次正面预期收益
-     * 公式：E = 面值 + (暴击率 × 暴击加成) + (正面概率 × 暴击加成) + 连击加成 / 2
      * @returns 预期收益
      */
     calculateExpectedValue(): number {
         const value = this.getUpgradeValue('value');
-        const critRate = this.getUpgradeValue('critRate') / 100;
-        const critBonus = this.getUpgradeValue('critBonus');
-        const headProb = this.getUpgradeValue('headProb') / 100;
+        const critRate = this.getUpgradeValue('critical') / 100;
+        const critBonus = this.getUpgradeValue('criticalBonus');
+        const headProb = this.getUpgradeValue('lucky') / 100;
         const streakBonus = this.getUpgradeValue('streakBonus');
 
         const ev = value 

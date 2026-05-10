@@ -39,92 +39,98 @@ export class VfxManager extends Component {
     // ==================== 核心玩法 VFX 节点配置 ====================
 
     /**
-     * 保底特效节点 (pity/vfx)
+     * 保底特效节点 (MainPage/CoinSection/pity/vfx)
      */
-    @property({ type: Node, displayName: '保底特效', tooltip: 'pity/vfx 节点' })
+    @property({ type: Node, displayName: '保底特效', tooltip: 'MainPage/CoinSection/pity/vfx 节点' })
     pityVfx: Node | null = null;
 
     /**
-     * 暴击特效节点 (criticalHit/vfx)
+     * 暴击特效节点 (MainPage/CoinSection/criticalHit/vfx)
      */
-    @property({ type: Node, displayName: '暴击特效', tooltip: 'criticalHit/vfx 节点' })
+    @property({ type: Node, displayName: '暴击特效', tooltip: 'MainPage/CoinSection/criticalHit/vfx 节点' })
     criticalHitVfx: Node | null = null;
 
     /**
-     * 连击特效节点 (streak/vfx)
+     * 连击特效节点 (MainPage/CoinSection/streak/vfx)
      */
-    @property({ type: Node, displayName: '连击特效', tooltip: 'streak/vfx 节点' })
+    @property({ type: Node, displayName: '连击特效', tooltip: 'MainPage/CoinSection/streak 节点' })
     streakVfx: Node | null = null;
 
     /**
-     * 自动翻转特效节点 (autoing/vfx)
+     * 自动翻转特效节点 (MainPage/CoinSection/autoing/vfx)
      */
-    @property({ type: Node, displayName: '自动翻转计时特效', tooltip: 'autoing/vfx 节点' })
+    @property({ type: Node, displayName: '自动翻转计时特效', tooltip: 'MainPage/CoinSection/autoing 节点' })
     autoingVfx: Node | null = null;
 
-    // ==================== MainPage 升级 VFX 节点配置 ====================
+    // ==================== MainPage/UpgradeSection 升级 VFX（3个） ====================
 
     /**
      * 面值升级特效节点（MainPage）
      */
     @property({ type: Node, displayName: '面值升级特效（主页）', tooltip: 'MainPage/UpgradeSection/value/vfx 节点' })
-    valueUpgradeVfxMainPage: Node | null = null;
+    valueVfxMainPage: Node | null = null;
 
     /**
      * 速度升级特效节点（MainPage）
      */
     @property({ type: Node, displayName: '速度升级特效（主页）', tooltip: 'MainPage/UpgradeSection/speed/vfx 节点' })
-    speedUpgradeVfxMainPage: Node | null = null;
+    speedVfxMainPage: Node | null = null;
 
-    // ==================== UpgradePage 升级 VFX 节点配置 ====================
+    /**
+     * 自动翻转购买特效节点（MainPage）
+     */
+    @property({ type: Node, displayName: '自动翻转购买特效', tooltip: 'MainPage/UpgradeSection/auto/vfx 节点' })
+    autoVfxMainPage: Node | null = null;
+
+    // ==================== UpgradePage 升级 VFX（8个） ====================
 
     /**
      * 面值升级特效节点（UpgradePage）
      */
-    @property({ type: Node, displayName: '面值升级特效（升级页）', tooltip: 'UpgradePage/Content/Scroll/内容/value/vfx 节点' })
-    valueUpgradeVfxUpgradePage: Node | null = null;
+    @property({ type: Node, displayName: '面值升级特效（升级页）', tooltip: 'UpgradePage/upgrades/value/vfx 节点' })
+    valueVfxUpgradePage: Node | null = null;
 
     /**
      * 速度升级特效节点（UpgradePage）
      */
-    @property({ type: Node, displayName: '速度升级特效（升级页）', tooltip: 'UpgradePage/Content/Scroll/内容/speed/vfx 节点' })
-    speedUpgradeVfxUpgradePage: Node | null = null;
+    @property({ type: Node, displayName: '速度升级特效（升级页）', tooltip: 'UpgradePage/upgrades/speed/vfx 节点' })
+    speedVfxUpgradePage: Node | null = null;
 
     /**
-     * 正面概率升级特效节点
+     * 幸运升级特效节点
      */
-    @property({ type: Node, displayName: '正面概率升级特效', tooltip: 'UpgradePage 内 headProb/vfx 节点' })
-    headProbUpgradeVfx: Node | null = null;
+    @property({ type: Node, displayName: '幸运升级特效', tooltip: 'UpgradePage/upgrades/lucky/vfx 节点' })
+    luckyVfx: Node | null = null;
 
     /**
-     * 暴击率升级特效节点
+     * 暴击升级特效节点
      */
-    @property({ type: Node, displayName: '暴击率升级特效', tooltip: 'UpgradePage 内 critRate/vfx 节点' })
-    critRateUpgradeVfx: Node | null = null;
+    @property({ type: Node, displayName: '暴击升级特效', tooltip: 'UpgradePage/upgrades/critical/vfx 节点' })
+    criticalVfx: Node | null = null;
 
     /**
      * 暴击加成升级特效节点
      */
-    @property({ type: Node, displayName: '暴击加成升级特效', tooltip: 'UpgradePage 内 critBonus/vfx 节点' })
-    critBonusUpgradeVfx: Node | null = null;
+    @property({ type: Node, displayName: '暴击加成升级特效', tooltip: 'UpgradePage/upgrades/criticalBonus/vfx 节点' })
+    criticalBonusVfx: Node | null = null;
 
     /**
      * 保底升级特效节点
      */
-    @property({ type: Node, displayName: '保底升级特效', tooltip: 'UpgradePage 内 pity/vfx 节点' })
+    @property({ type: Node, displayName: '保底升级特效', tooltip: 'UpgradePage/upgrades/pity/vfx 节点' })
     pityUpgradeVfx: Node | null = null;
 
     /**
      * 连击加成升级特效节点
      */
-    @property({ type: Node, displayName: '连击加成升级特效', tooltip: 'UpgradePage 内 streakBonus/vfx 节点' })
-    streakBonusUpgradeVfx: Node | null = null;
+    @property({ type: Node, displayName: '连击加成升级特效', tooltip: 'UpgradePage/upgrades/streakBonus/vfx 节点' })
+    streakBonusVfx: Node | null = null;
 
     /**
-     * 自动持续时间升级特效节点
+     * 自动时间升级特效节点
      */
-    @property({ type: Node, displayName: '自动持续时间升级特效', tooltip: 'UpgradePage 内 autoDuration/vfx 节点' })
-    autoDurationUpgradeVfx: Node | null = null;
+    @property({ type: Node, displayName: '自动时间升级特效', tooltip: 'UpgradePage/upgrades/time/vfx 节点' })
+    timeUpgradeVfx: Node | null = null;
 
     // ==================== 音效配置（在编辑器中拖拽配置） ====================
 
@@ -176,19 +182,20 @@ export class VfxManager extends Component {
         this.registerVfx('streak', this.streakVfx);
         this.registerVfx('autoing', this.autoingVfx);
 
-        // 注册 MainPage 升级 VFX
-        this.registerVfx('valueMainPage', this.valueUpgradeVfxMainPage);
-        this.registerVfx('speedMainPage', this.speedUpgradeVfxMainPage);
+        // 注册 MainPage/UpgradeSection 升级 VFX（3个）
+        this.registerVfx('valueMainPage', this.valueVfxMainPage);
+        this.registerVfx('speedMainPage', this.speedVfxMainPage);
+        this.registerVfx('autoMainPage', this.autoVfxMainPage);
 
-        // 注册 UpgradePage 升级 VFX
-        this.registerVfx('valueUpgradePage', this.valueUpgradeVfxUpgradePage);
-        this.registerVfx('speedUpgradePage', this.speedUpgradeVfxUpgradePage);
-        this.registerVfx('headProb', this.headProbUpgradeVfx);
-        this.registerVfx('critRate', this.critRateUpgradeVfx);
-        this.registerVfx('critBonus', this.critBonusUpgradeVfx);
+        // 注册 UpgradePage 升级 VFX（8个）
+        this.registerVfx('valueUpgradePage', this.valueVfxUpgradePage);
+        this.registerVfx('speedUpgradePage', this.speedVfxUpgradePage);
+        this.registerVfx('lucky', this.luckyVfx);
+        this.registerVfx('critical', this.criticalVfx);
+        this.registerVfx('criticalBonus', this.criticalBonusVfx);
         this.registerVfx('pityUpgrade', this.pityUpgradeVfx);
-        this.registerVfx('streakBonus', this.streakBonusUpgradeVfx);
-        this.registerVfx('autoDuration', this.autoDurationUpgradeVfx);
+        this.registerVfx('streakBonus', this.streakBonusVfx);
+        this.registerVfx('timeUpgrade', this.timeUpgradeVfx);
 
         let totalCount = 0;
         this._controllers.forEach(arr => totalCount += arr.length);
@@ -345,7 +352,7 @@ export class VfxManager extends Component {
     /**
      * 播放升级特效 + 音效
      * 触发时机：对应升级项购买成功时
-     * 注意：value、speed、auto 会在 MainPage 和 UpgradePage 同时播放
+     * 注意：value、speed 会在 MainPage 和 UpgradePage 同时播放
      * @param type 升级项类型
      */
     playUpgrade(type: UpgradeType): void {
@@ -358,20 +365,20 @@ export class VfxManager extends Component {
 
     /**
      * 获取升级项对应的 VFX 名称列表
-     * value、speed、auto 会返回 MainPage 和 UpgradePage 两个名称
+     * value、speed 会返回 MainPage 和 UpgradePage 两个名称
      * @param type 升级项类型
      * @returns VFX 名称数组
      */
     private getUpgradeVfxNames(type: UpgradeType): string[] {
         switch (type) {
             case 'value': return ['valueMainPage', 'valueUpgradePage'];
-            case 'animSpeed': return ['speedMainPage', 'speedUpgradePage'];
-            case 'autoDuration': return ['autoDuration'];
-            case 'headProb': return ['headProb'];
-            case 'critRate': return ['critRate'];
-            case 'critBonus': return ['critBonus'];
+            case 'speed': return ['speedMainPage', 'speedUpgradePage'];
+            case 'lucky': return ['lucky'];
+            case 'critical': return ['critical'];
+            case 'criticalBonus': return ['criticalBonus'];
             case 'pity': return ['pityUpgrade'];
             case 'streakBonus': return ['streakBonus'];
+            case 'time': return ['timeUpgrade'];
             default: return ['valueMainPage', 'valueUpgradePage'];
         }
     }

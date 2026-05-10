@@ -2,43 +2,25 @@
  * MainSceneController - 主场景入口控制器
  * 
  * 功能说明：
- * - 主场景的入口脚本，挂载到 Canvas 节点上
- * - 初始化所有游戏系统（GameManager、AudioManager 等）
- * - 管理弹窗的显示/隐藏（升级面板、属性面板、设置弹窗）
- * - 处理主界面按钮点击事件（升级按钮、属性按钮、设置按钮）
+ * - 初始化游戏核心系统（GameManager、AudioManager）
+ * - 管理页面切换（MainPage ↔ UpgradePage ↔ StatusPage）
+ * - 管理弹窗显示/隐藏（SettingPopup）
+ * - 绑定主界面按钮事件
  * 
- * 场景节点对应：
- * - Canvas 根节点（挂载此脚本）
- *   ├── MainPage (主游戏页面)
- *   │   ├── bg (背景)
- *   │   ├── CoinSection (硬币区域)
- *   │   ├── UI (顶部区域)
- *   │   │   ├── TopSection
- *   │   │   │   ├── button_setting (设置按钮)
- *   │   │   │   ├── socre (余额显示)
- *   │   │   │   ├── need (进度条)
- *   │   │   │   └── hitCount (抛币次数)
- *   │   │   └── BottomSection
- *   │   │       ├── button_shop (升级按钮)
- *   │   │       └── button_status (属性按钮)
- *   │   └── UpgradeSection (常驻升级区)
- *   │       ├── value (面值升级)
- *   │       ├── speed (速度升级)
- *   │       └── auto (自动升级)
- *   ├── SettingPopup (设置弹窗)
- *   ├── ShopPopup (升级面板)
- *   └── StatsPopup (属性面板)
- * 
- * 使用方式：
- * 将此脚本挂载到 Canvas 节点上，然后配置各弹窗节点的引用
+ * 场景结构：
+ * Canvas
+ * ├── MainPage（主游戏页面）
+ * ├── UpgradePage（升级页面）
+ * ├── StatusPage（状态页面）
+ * └── Toast（提示弹窗，非激活）
  */
 
-import { _decorator, Component, Node } from 'cc';
+import { _decorator, Component, Node, Label, log, Button } from 'cc';
 import { GameManager } from './core/GameManager';
 import { AudioManager } from './core/AudioManager';
 import { VfxManager } from './ui/VfxManager';
-import { ShopPopupCtrl } from './ui/ShopPopupCtrl';
-import { StatsPopupCtrl } from './ui/StatsPopupCtrl';
+import { UpgradePageCtrl } from './ui/UpgradePageCtrl';
+import { StatusPageCtrl } from './ui/StatusPageCtrl';
 import { SettingPopupCtrl } from './ui/SettingPopupCtrl';
 
 // 解构装饰器
@@ -48,114 +30,104 @@ const { ccclass, property } = _decorator;
 export class MainSceneController extends Component {
 
     /**
-     * 设置弹窗节点
+     * 设置弹窗控制器引用
      */
-    @property({ type: Node, displayName: '设置弹窗', tooltip: 'SettingPopup 节点' })
-    settingPopupNode: Node | null = null;
+    @property({ type: SettingPopupCtrl, displayName: '设置弹窗', tooltip: 'MainPage/SettingPopup 节点上的 SettingPopupCtrl 组件' })
+    settingPopup: SettingPopupCtrl | null = null;
 
     /**
-     * 升级面板节点
+     * 升级页面控制器引用
      */
-    @property({ type: Node, displayName: '升级面板', tooltip: 'ShopPopup 节点' })
-    shopPopupNode: Node | null = null;
+    @property({ type: UpgradePageCtrl, displayName: '升级页面', tooltip: 'UpgradePage 节点上的 UpgradePageCtrl 组件' })
+    upgradePage: UpgradePageCtrl | null = null;
 
     /**
-     * 属性面板节点
+     * 状态页面控制器引用
      */
-    @property({ type: Node, displayName: '属性面板', tooltip: 'StatsPopup 节点' })
-    statsPopupNode: Node | null = null;
+    @property({ type: StatusPageCtrl, displayName: '状态页面', tooltip: 'StatusPage 节点上的 StatusPageCtrl 组件' })
+    statusPage: StatusPageCtrl | null = null;
 
     /**
      * 设置按钮节点
      */
-    @property({ type: Node, displayName: '设置按钮', tooltip: 'button_setting 节点' })
+    @property({ type: Node, displayName: '设置按钮', tooltip: 'MainPage/UI/TopSection/button_setting 节点' })
     settingBtnNode: Node | null = null;
 
     /**
      * 升级按钮节点
      */
-    @property({ type: Node, displayName: '升级按钮', tooltip: 'button_shop 节点' })
-    shopBtnNode: Node | null = null;
+    @property({ type: Node, displayName: '升级按钮', tooltip: 'MainPage/UI/BottomSection/buttons/button_shop 节点' })
+    upgradeBtnNode: Node | null = null;
 
     /**
-     * 属性按钮节点
+     * 状态按钮节点
      */
-    @property({ type: Node, displayName: '属性按钮', tooltip: 'button_status 节点' })
-    statsBtnNode: Node | null = null;
+    @property({ type: Node, displayName: '状态按钮', tooltip: 'MainPage/UI/BottomSection/buttons/button_status 节点' })
+    statusBtnNode: Node | null = null;
 
     /**
-     * VFX 管理器节点
+     * 游戏管理器实例
      */
-    @property({ type: Node, displayName: 'VFX 管理器', tooltip: '挂载了 VfxManager 的节点' })
-    vfxManagerNode: Node | null = null;
+    private _gameManager: GameManager | null = null;
 
     /**
-     * 设置弹窗控制器
+     * 音效管理器实例
      */
-    private _settingPopupCtrl: SettingPopupCtrl | null = null;
+    private _audioManager: AudioManager | null = null;
 
     /**
-     * 升级面板控制器
+     * VFX 管理器实例
      */
-    private _shopPopupCtrl: ShopPopupCtrl | null = null;
+    private _vfxManager: VfxManager | null = null;
 
     /**
-     * 属性面板控制器
+     * 当前显示的页面（'main' | 'upgrade' | 'status'）
      */
-    private _statsPopupCtrl: StatsPopupCtrl | null = null;
+    private _currentPage: 'main' | 'upgrade' | 'status' = 'main';
 
     /**
      * 组件加载时调用
-     * 初始化所有游戏系统
+     * 初始化所有系统
      */
     onLoad() {
-        console.log('[MainSceneController] 初始化主场景...');
+        log('[MainSceneController] 开始初始化主场景...');
 
-        // 初始化音频管理器
-        const audioManager = AudioManager.getInstance();
-        audioManager.init();
-        console.log('[MainSceneController] AudioManager 已初始化');
+        // 1. 初始化音效管理器
+        this._audioManager = AudioManager.getInstance();
+        this._audioManager.init();
 
-        // 初始化游戏管理器
-        const gameManager = GameManager.getInstance();
+        // 2. 初始化游戏管理器
+        this._gameManager = GameManager.getInstance();
 
-        // 初始化 VFX 管理器并连接到 GameManager
-        if (this.vfxManagerNode) {
-            const vfxManager = this.vfxManagerNode.getComponent(VfxManager);
-            if (vfxManager) {
-                gameManager.setVfxManager(vfxManager);
-                console.log('[MainSceneController] VfxManager 已初始化并连接');
+        // 3. 获取 VFX 管理器
+        this._vfxManager = this.getComponent(VfxManager);
+        if (this._vfxManager) {
+            this._gameManager.setVfxManager(this._vfxManager);
+            log('[MainSceneController] VFX 管理器已连接');
+        } else {
+            log('[MainSceneController] 警告: 未找到 VFX 管理器');
+        }
+
+        // 4. 查找 SettingPopup 组件
+        if (!this.settingPopup) {
+            const settingPopupNode = this.node.getChildByName('MainPage')?.getChildByName('SettingPopup');
+            if (settingPopupNode) {
+                this.settingPopup = settingPopupNode.getComponent(SettingPopupCtrl);
+                log('[MainSceneController] 自动查找并绑定 SettingPopup 组件');
             } else {
-                console.warn('[MainSceneController] VfxManager 组件未找到');
+                log('[MainSceneController] ⚠️ 未找到 SettingPopup 节点');
             }
+        } else {
+            log('[MainSceneController] SettingPopup 组件已配置');
         }
 
-        console.log('[MainSceneController] GameManager 已初始化');
-
-        // 获取弹窗控制器
-        if (this.settingPopupNode) {
-            this._settingPopupCtrl = this.settingPopupNode.getComponent(SettingPopupCtrl);
-        }
-        if (this.shopPopupNode) {
-            this._shopPopupCtrl = this.shopPopupNode.getComponent(ShopPopupCtrl);
-        }
-        if (this.statsPopupNode) {
-            this._statsPopupCtrl = this.statsPopupNode.getComponent(StatsPopupCtrl);
-        }
-
-        // 绑定按钮事件
+        // 5. 绑定按钮事件
         this.bindButtonEvents();
 
-        console.log('[MainSceneController] 主场景初始化完成');
-    }
+        // 6. 设置初始页面状态
+        this.showMainPage();
 
-    /**
-     * 组件启用时调用
-     * 播放 BGM
-     */
-    onEnable() {
-        // 播放背景音乐
-        AudioManager.getInstance().playBGM();
+        log('[MainSceneController] 初始化完成！');
     }
 
     /**
@@ -163,100 +135,180 @@ export class MainSceneController extends Component {
      * 清理事件监听
      */
     onDestroy() {
-        // 解绑按钮事件
-        this.unbindButtonEvents();
+        try {
+            if (this.settingBtnNode && this.settingBtnNode.isValid) {
+                const btn = this.settingBtnNode.getComponent(Button);
+                if (btn && btn.node && btn.node.isValid) {
+                    btn.node.off(Button.EventType.CLICK, this.onSettingClick, this);
+                }
+            }
+            if (this.upgradeBtnNode && this.upgradeBtnNode.isValid) {
+                const btn = this.upgradeBtnNode.getComponent(Button);
+                if (btn && btn.node && btn.node.isValid) {
+                    btn.node.off(Button.EventType.CLICK, this.onUpgradeClick, this);
+                }
+            }
+            if (this.statusBtnNode && this.statusBtnNode.isValid) {
+                const btn = this.statusBtnNode.getComponent(Button);
+                if (btn && btn.node && btn.node.isValid) {
+                    btn.node.off(Button.EventType.CLICK, this.onStatusClick, this);
+                }
+            }
+        } catch (e) {
+            console.warn('[MainSceneController] onDestroy cleanup error:', e);
+        }
     }
 
     /**
-     * 绑定按钮点击事件
+     * 绑定所有按钮事件
      */
     private bindButtonEvents(): void {
+        log('[MainSceneController] 开始绑定按钮事件...');
+        
         if (this.settingBtnNode) {
-            this.settingBtnNode.on(Node.EventType.TOUCH_END, this.onSettingBtnClick, this);
+            log('[MainSceneController] 找到设置按钮节点');
+            const btn = this.settingBtnNode.getComponent(Button);
+            if (btn) {
+                log('[MainSceneController] 设置按钮Button组件存在，绑定事件');
+                btn.node.on(Button.EventType.CLICK, this.onSettingClick, this);
+            } else {
+                log('[MainSceneController] ⚠️ 设置按钮没有Button组件');
+            }
+        } else {
+            log('[MainSceneController] ⚠️ 设置按钮节点为空');
         }
-        if (this.shopBtnNode) {
-            this.shopBtnNode.on(Node.EventType.TOUCH_END, this.onShopBtnClick, this);
+        
+        if (this.upgradeBtnNode) {
+            log('[MainSceneController] 找到升级按钮节点');
+            const btn = this.upgradeBtnNode.getComponent(Button);
+            if (btn) {
+                log('[MainSceneController] 升级按钮Button组件存在，绑定事件');
+                btn.node.on(Button.EventType.CLICK, this.onUpgradeClick, this);
+            }
         }
-        if (this.statsBtnNode) {
-            this.statsBtnNode.on(Node.EventType.TOUCH_END, this.onStatsBtnClick, this);
+        
+        if (this.statusBtnNode) {
+            log('[MainSceneController] 找到状态按钮节点');
+            const btn = this.statusBtnNode.getComponent(Button);
+            if (btn) {
+                log('[MainSceneController] 状态按钮Button组件存在，绑定事件');
+                btn.node.on(Button.EventType.CLICK, this.onStatusClick, this);
+            }
         }
-    }
-
-    /**
-     * 解绑按钮点击事件
-     */
-    private unbindButtonEvents(): void {
-        if (this.settingBtnNode) {
-            this.settingBtnNode.off(Node.EventType.TOUCH_END, this.onSettingBtnClick, this);
-        }
-        if (this.shopBtnNode) {
-            this.shopBtnNode.off(Node.EventType.TOUCH_END, this.onShopBtnClick, this);
-        }
-        if (this.statsBtnNode) {
-            this.statsBtnNode.off(Node.EventType.TOUCH_END, this.onStatsBtnClick, this);
-        }
+        
+        log('[MainSceneController] settingPopup引用:', this.settingPopup ? '已配置' : '未配置');
+        log('[MainSceneController] 按钮事件绑定完成');
     }
 
     /**
      * 设置按钮点击事件处理
      */
-    private onSettingBtnClick(): void {
-        // 播放点击音效
-        AudioManager.getInstance().playClick();
+    private onSettingClick(): void {
+        log('[MainSceneController] 设置按钮点击');
 
-        // 关闭其他弹窗
-        this.closeAllPopups();
-
-        // 打开设置弹窗
-        if (this._settingPopupCtrl) {
-            this._settingPopupCtrl.show();
+        if (this._audioManager) {
+            this._audioManager.playClick();
         }
+
+        this.showSettingPopup();
     }
 
     /**
      * 升级按钮点击事件处理
      */
-    private onShopBtnClick(): void {
-        // 播放点击音效
-        AudioManager.getInstance().playClick();
+    private onUpgradeClick(): void {
+        log('[MainSceneController] 升级按钮点击');
 
-        // 关闭其他弹窗
-        this.closeAllPopups();
+        if (this._audioManager) {
+            this._audioManager.playClick();
+        }
 
-        // 打开升级面板
-        if (this._shopPopupCtrl) {
-            this._shopPopupCtrl.show();
+        this.showUpgradePage();
+    }
+
+    /**
+     * 状态按钮点击事件处理
+     */
+    private onStatusClick(): void {
+        log('[MainSceneController] 状态按钮点击');
+
+        if (this._audioManager) {
+            this._audioManager.playClick();
+        }
+
+        this.showStatusPage();
+    }
+
+    /**
+     * 显示主页面
+     */
+    private showMainPage(): void {
+        this._currentPage = 'main';
+
+        // 隐藏其他页面
+        if (this.upgradePage) {
+            this.upgradePage.hide();
+        }
+        if (this.statusPage) {
+            this.statusPage.hide();
         }
     }
 
     /**
-     * 属性按钮点击事件处理
+     * 显示升级页面
      */
-    private onStatsBtnClick(): void {
-        // 播放点击音效
-        AudioManager.getInstance().playClick();
+    private showUpgradePage(): void {
+        this._currentPage = 'upgrade';
 
-        // 关闭其他弹窗
-        this.closeAllPopups();
+        // 隐藏其他页面
+        if (this.statusPage) {
+            this.statusPage.hide();
+        }
 
-        // 打开属性面板
-        if (this._statsPopupCtrl) {
-            this._statsPopupCtrl.show();
+        // 显示升级页面
+        if (this.upgradePage) {
+            this.upgradePage.show();
         }
     }
 
     /**
-     * 关闭所有弹窗
+     * 显示状态页面
      */
-    private closeAllPopups(): void {
-        if (this._settingPopupCtrl) {
-            this._settingPopupCtrl.hide();
+    private showStatusPage(): void {
+        this._currentPage = 'status';
+
+        // 隐藏其他页面
+        if (this.upgradePage) {
+            this.upgradePage.hide();
         }
-        if (this._shopPopupCtrl) {
-            this._shopPopupCtrl.hide();
+
+        // 显示状态页面
+        if (this.statusPage) {
+            this.statusPage.show();
         }
-        if (this._statsPopupCtrl) {
-            this._statsPopupCtrl.hide();
+    }
+
+    /**
+     * 显示设置弹窗
+     */
+    private showSettingPopup(): void {
+        log('[MainSceneController] showSettingPopup 被调用');
+        log('[MainSceneController] settingPopup值:', this.settingPopup);
+        
+        if (this.settingPopup) {
+            log('[MainSceneController] 调用 settingPopup.show()');
+            this.settingPopup.show();
+            log('[MainSceneController] settingPopup.show() 调用完成');
+        } else {
+            log('[MainSceneController] ❌ settingPopup为null，无法显示弹窗');
         }
+    }
+
+    /**
+     * 获取当前页面
+     * @returns 当前页面标识
+     */
+    getCurrentPage(): 'main' | 'upgrade' | 'status' {
+        return this._currentPage;
     }
 }
