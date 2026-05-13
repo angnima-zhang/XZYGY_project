@@ -28,7 +28,7 @@
  * 将此脚本挂载到 Coin 节点上即可
  */
 
-import { _decorator, Component, Node, Label, Sprite, Tween, tween, Vec3, UIOpacity, Color, Button } from 'cc';
+import { _decorator, Component, Node, Label, Sprite, Tween, tween, Vec3, UIOpacity, Color, Button, Animation } from 'cc';
 import { GameManager, FlipResult } from '../core/GameManager';
 import { VfxManager } from './VfxManager';
 
@@ -90,9 +90,30 @@ export class CoinController extends Component {
     pityNode: Node | null = null;
 
     /**
+     * 翻转动画时长（秒）
+     */
+    @property({
+        displayName: '翻转动画时长',
+        tooltip: '翻硬币动画的持续时间，单位秒，保留2位小数',
+        step: 0.01,
+        min: 0.01
+    })
+    flipDuration: number = 1.5;
+
+    /**
      * 硬币 Sprite 组件引用（用于切换正/反面贴图）
      */
     private _coinSprite: Sprite | null = null;
+
+    /**
+     * 硬币 Animation 组件引用（用于播放翻转动画）
+     */
+    private _coinAnimation: Animation | null = null;
+
+    /**
+     * 动画名称（必须与 Animation 组件中的动画剪辑名称一致）
+     */
+    private readonly FLIP_ANIM_NAME = 'coin_flip';
 
     /**
      * 游戏管理器实例
@@ -134,8 +155,22 @@ export class CoinController extends Component {
      * 初始化组件引用和事件监听
      */
     onLoad() {
+        console.log('[CoinController] === onLoad 开始 ===');
+        
         // 获取硬币 Sprite 组件
         this._coinSprite = this.node.getComponent(Sprite);
+        console.log('[CoinController] Sprite 组件:', this._coinSprite ? '已找到' : '未找到');
+
+        // 获取硬币 Animation 组件
+        this._coinAnimation = this.node.getComponent(Animation);
+        console.log('[CoinController] Animation 组件:', this._coinAnimation ? '已找到' : '未找到');
+        
+        // 如果找到 Animation 组件，打印详细信息
+        if (this._coinAnimation) {
+            console.log('[CoinController] Animation clips:', this._coinAnimation.clips);
+            console.log('[CoinController] Animation defaultClip:', this._coinAnimation.defaultClip?.name);
+            console.log('[CoinController] Animation 当前播放状态:', this._coinAnimation.isPlaying);
+        }
 
         // 获取游戏管理器实例
         this._gameManager = GameManager.getInstance();
@@ -149,7 +184,13 @@ export class CoinController extends Component {
         // 绑定硬币点击事件
         this.node.on(Node.EventType.TOUCH_END, this.onCoinClick, this);
 
-        console.log('[CoinController] 初始化完成');
+        // 监听动画结束事件
+        if (this._coinAnimation) {
+            this._coinAnimation.on(Animation.EventType.FINISHED, this.onFlipAnimationFinished, this);
+            console.log('[CoinController] 已注册动画结束事件监听器');
+        }
+
+        console.log('[CoinController] === onLoad 完成 ===');
     }
 
     /**
@@ -167,6 +208,11 @@ export class CoinController extends Component {
     onDestroy() {
         // 停止所有针对此节点的 Tween 动画
         Tween.stopAllByTarget(this.node);
+
+        // 停止动画
+        if (this._coinAnimation) {
+            this._coinAnimation.off(Animation.EventType.FINISHED, this.onFlipAnimationFinished, this);
+        }
 
         // 移除事件监听
         if (this._gameManager) {
@@ -201,31 +247,75 @@ export class CoinController extends Component {
 
     /**
      * 播放抛硬币动画
-     * Y轴旋转模拟硬币翻转
+     * 使用 Animation 组件播放翻转动画
      */
     private playFlipAnimation(): void {
+        console.log('[CoinController] ================================');
+        console.log('[CoinController] === playFlipAnimation 被调用 ===');
+        console.log('[CoinController] ================================');
+        
         this._isAnimating = true;
+        console.log('[CoinController] _isAnimating 设置为 true');
 
         // 禁用除设置按钮外的所有按钮并置灰
+        console.log('[CoinController] 调用 disableAllButtons()');
         this.disableAllButtons();
 
-        // 获取动画时长（从 GameManager 获取）
-        const duration = this._gameManager.getAnimDuration();
+        if (this._coinAnimation) {
+            console.log('[CoinController] Animation 组件存在，准备播放动画');
+            console.log('[CoinController] 要播放的动画名称:', this.FLIP_ANIM_NAME);
+            console.log('[CoinController] Animation 组件当前的 clips:', this._coinAnimation.clips.map(c => c.name));
+            console.log('[CoinController] Animation 当前是否正在播放:', this._coinAnimation.isPlaying);
+            console.log('[CoinController] 设置的目标时长:', this.flipDuration);
 
-        console.log(`[CoinController] 开始翻转动画，时长: ${duration} 秒`);
+            // 尝试播放动画
+            try {
+                this._coinAnimation.play(this.FLIP_ANIM_NAME);
+                
+                // 获取 AnimationState 并调整播放速度
+                const animState = this._coinAnimation.getState(this.FLIP_ANIM_NAME);
+                if (animState) {
+                    const originalDuration = animState.duration;
+                    console.log('[CoinController] 动画原始时长:', originalDuration);
+                    
+                    // 计算播放速度：原始时长 / 目标时长
+                    const speed = originalDuration / this.flipDuration;
+                    animState.speed = speed;
+                    console.log('[CoinController] 设置播放速度:', speed);
+                    console.log('[CoinController] 预期播放时长:', originalDuration / speed);
+                }
+                
+                console.log('[CoinController] 动画播放方法已调用');
+                console.log('[CoinController] 动画播放后 isPlaying 状态:', this._coinAnimation.isPlaying);
+                console.log('[CoinController] 动画播放后 currentClip 名称:', this._coinAnimation.currentClip?.name || 'null');
+            } catch (error) {
+                console.error('[CoinController] 播放动画时发生异常:', error);
+            }
+        } else {
+            console.warn('[CoinController] === Animation 组件未找到，使用备用方案 ===');
 
-        // 保存原始 Y 轴旋转角度
-        const originalEuler = this.node.eulerAngles.clone();
+            // 备用方案：使用 tween 旋转
+            const duration = this._gameManager.getAnimDuration();
+            console.log('[CoinController] 使用 tween 旋转，持续时间:', duration);
+            tween(this.node)
+                .by(duration, { eulerAngles: new Vec3(0, 1800, 0) })
+                .call(() => {
+                    this.onFlipAnimationFinished();
+                })
+                .start();
+        }
+    }
 
-        // Y轴旋转动画（模拟硬币翻转）
-        // 旋转 5 圈（1800度）
-        tween(this.node)
-            .by(duration, { eulerAngles: new Vec3(0, 1800, 0) })
-            .call(() => {
-                // 动画结束后调用 GameManager 处理逻辑
-                this._gameManager.flipCoin();
-            })
-            .start();
+    /**
+     * 翻转动画结束回调
+     */
+    private onFlipAnimationFinished(): void {
+        console.log('[CoinController] ================================');
+        console.log('[CoinController] === onFlipAnimationFinished 被调用 ===');
+        console.log('[CoinController] ================================');
+        console.log('[CoinController] 翻转动画结束，调用 flipCoin');
+        // 动画结束后调用 GameManager 处理逻辑
+        this._gameManager.flipCoin();
     }
 
     /**
@@ -233,6 +323,11 @@ export class CoinController extends Component {
      * @param result 翻转结果
      */
     private onFlipResult(result: FlipResult): void {
+        console.log('[CoinController] ================================');
+        console.log('[CoinController] === onFlipResult 被调用 ===');
+        console.log('[CoinController] ================================');
+        console.log('[CoinController] 翻转结果:', JSON.stringify(result));
+        
         if (!result) return;
 
         // 更新 UI 显示
@@ -262,9 +357,11 @@ export class CoinController extends Component {
         }
 
         // 恢复所有按钮
+        console.log('[CoinController] 调用 enableAllButtons() 恢复按钮');
         this.enableAllButtons();
 
         this._isAnimating = false;
+        console.log('[CoinController] _isAnimating 设置为 false');
     }
 
     /**
