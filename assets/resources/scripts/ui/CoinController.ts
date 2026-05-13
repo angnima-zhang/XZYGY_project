@@ -28,7 +28,7 @@
  * 将此脚本挂载到 Coin 节点上即可
  */
 
-import { _decorator, Component, Node, Label, Sprite, Tween, tween, Vec3, UIOpacity, Color, Button, Animation } from 'cc';
+import { _decorator, Component, Node, Label, Sprite, SpriteFrame, Tween, tween, Vec3, UIOpacity, Color, Button, Animation, resources, SpriteFrame as CCSpriteFrame } from 'cc';
 import { GameManager, FlipResult } from '../core/GameManager';
 import { VfxManager } from './VfxManager';
 
@@ -42,6 +42,14 @@ interface ButtonState {
     node: Node;
     interactable: boolean;
     color: Color;
+}
+
+/**
+ * 动画帧数据
+ */
+interface AnimFrameData {
+    frame: number;
+    spriteFrame: string;
 }
 
 @ccclass('CoinController')
@@ -241,15 +249,20 @@ export class CoinController extends Component {
         // 播放点击音效
         this._vfxManager?.playCoinClick();
 
-        // 触发翻转
-        this.playFlipAnimation();
+        // 准备翻转结果（不修改游戏状态）
+        const pendingResult = this._gameManager.prepareFlip();
+        console.log('[CoinController] 预定的翻转结果:', pendingResult?.isHead ? '正面' : '背面');
+
+        // 触发翻转动画（传入预定结果）
+        this.playFlipAnimation(pendingResult);
     }
 
     /**
      * 播放抛硬币动画
      * 使用 Animation 组件播放翻转动画
+     * @param pendingResult 预定的翻转结果，用于动态替换精灵帧
      */
-    private playFlipAnimation(): void {
+    private playFlipAnimation(pendingResult: FlipResult | null): void {
         console.log('[CoinController] ================================');
         console.log('[CoinController] === playFlipAnimation 被调用 ===');
         console.log('[CoinController] ================================');
@@ -281,6 +294,12 @@ export class CoinController extends Component {
 
             // 尝试播放动画
             try {
+                // 如果结果是正面，替换最后60帧的精灵帧
+                if (pendingResult?.isHead && this._coinSprite) {
+                    console.log('[CoinController] 结果为正面，将替换最后60帧的精灵帧');
+                    this.replaceLast60FramesWithZhengmian(pendingResult.isCrit);
+                }
+
                 this._coinAnimation.play(this.FLIP_ANIM_NAME);
                 
                 // 获取 AnimationState 并调整播放速度
@@ -317,6 +336,139 @@ export class CoinController extends Component {
                 })
                 .start();
         }
+    }
+
+    /**
+     * 替换动画最后60帧的精灵帧为正面图片
+     * @param isCrit 是否暴击
+     */
+    private async replaceLast60FramesWithZhengmian(isCrit: boolean): Promise<void> {
+        if (!this._coinSprite) return;
+
+        console.log('[CoinController] 开始替换最后60帧的精灵帧');
+
+        // 正面图片的路径映射（从 processed_frame_001 到 processed_frame_060）
+        const zhengmianFrameUuids: string[] = [
+            '6ac09bff-f685-436d-9049-35fb8271bf21', // processed_frame_001
+            '82d15a55-ec4f-42be-a19f-38a2c0066463', // processed_frame_002
+            'a26d5157-1cfb-4118-aba0-816e6080b7ed', // processed_frame_003
+            'b25a5126-6c12-4ec3-a81e-1d3b4131ecd7', // processed_frame_004
+            '746a2a6c-e02c-46b1-9041-9e2814a873ac', // processed_frame_005
+            'c5b93cca-11ca-4d0a-8c5a-a677dc68378f', // processed_frame_006
+            '2f799a79-5d84-460c-ae8b-c0ce60269686', // processed_frame_007
+            '9a900b5f-09de-43b0-8d35-9619c7bb8c8b', // processed_frame_008
+            '859fbe84-d6f5-4251-9c46-dde7ac1b8889', // processed_frame_009
+            '08d37773-7ec7-4724-9a9d-36b0f1553dfe', // processed_frame_010
+            '2fed28b0-814f-4d15-9317-30d1229311de', // processed_frame_011
+            'c664426a-e731-4b8a-95fa-403a3e67be85', // processed_frame_012
+            'f26267dc-2405-4b4d-a165-a8a999481982', // processed_frame_013
+            '976ea28f-a91a-4974-960b-78f5c0c38b7c', // processed_frame_014
+            'ef6d4bc2-882b-4291-88be-cc7809f5705f', // processed_frame_015
+            '39f8977a-239d-4a2b-9d6d-66177ebc8cdb', // processed_frame_016
+            'd8fdcaa4-c196-4022-a44a-843def3b168f', // processed_frame_017
+            '5706c310-6881-4ebb-8792-c887464685d0', // processed_frame_018
+            'f467944c-ef3a-431e-8063-f9ae5e0d0259', // processed_frame_019
+            'e13beb9b-8735-410f-abe2-2673c4a739a9', // processed_frame_020
+            '79784b08-8383-4277-ae8e-7849a04a486d', // processed_frame_021
+            'c42b3e36-64ed-4d7f-a4cd-2a293d56d95c', // processed_frame_022
+            '04b44477-2d13-4afd-9357-6bd16ce314ed', // processed_frame_023
+            '796c85b5-b320-4bc0-b78b-cf290a083a37', // processed_frame_024
+            'e7472c08-2020-428a-999c-8c9d8f76c070', // processed_frame_025
+            'd97c01f8-03bd-4e98-b2e5-a020daf8abf8', // processed_frame_026
+            '55fb52e1-245a-4303-a0f4-203286c4fd25', // processed_frame_027
+            'adec3de7-bd5a-405e-a6fd-6816fa8c605f', // processed_frame_028
+            'f5d931d5-7b29-4677-9102-b6e218710b1c', // processed_frame_029
+            '003aedd9-4084-43db-afe0-64714c525321', // processed_frame_030
+            'e50f5b98-0ea7-4c6e-91f8-be40885b9d9e', // processed_frame_031
+            '1a5f9499-7291-41f5-8c5d-ae5abd3c7d35', // processed_frame_032
+            '8c20c654-1876-44ff-96ad-9b557506cb84', // processed_frame_033
+            '13fe3a1a-7ed1-4f2b-b36f-62b45bb5f79b', // processed_frame_034
+            'ca640e96-991e-4bf0-a82e-5049f752af57', // processed_frame_035
+            '7d68a878-d169-4cf9-8d9b-82c377789d87', // processed_frame_036
+            '9b1f6486-6780-475a-99c9-0ad7d22b2b8b', // processed_frame_037
+            '6abc8ac2-0bc6-4e7a-9094-88aca7b1ffd9', // processed_frame_038
+            '1a1a8030-c4b1-42bb-a7e9-b10ab8448a8e', // processed_frame_039
+            '72d0a692-06ac-49f2-aeb0-6a6ea7bf743e', // processed_frame_040
+            'e09e1496-5eff-4bba-94bc-87ab0b2ae422', // processed_frame_041
+            '33fda8d3-0399-4fd1-b877-2eb06559e325', // processed_frame_042
+            'a2b6e89a-6b6a-41a2-9097-ce8d4ba075dc', // processed_frame_043
+            'b9405754-ca53-4270-9c9c-c7985afd7acd', // processed_frame_044
+            '4082ffa6-c8c4-469e-afa5-47af6f75c631', // processed_frame_045
+            'b52175cd-0f13-4752-b869-23888ceeb62c', // processed_frame_046
+            'f8185677-bfc6-485f-aa88-bbe904413445', // processed_frame_047
+            'e5168dcf-afd9-48b9-a101-364211c6fbd0', // processed_frame_048
+            '13cc9721-05b6-46c5-9356-af20caa8db0b', // processed_frame_049
+            '5ff78388-459f-4e11-9c81-6c3962849a56', // processed_frame_050
+            'cd4ab9e0-59c3-4486-8a55-002a0c14dc3a', // processed_frame_051
+            'da525fa4-610f-4d7c-8bae-17a37c71311c', // processed_frame_052
+            '1172a4fb-881c-4b30-8b2f-9581ab90db90', // processed_frame_053
+            'cffd6273-4f56-43e8-bcab-9e9026ff9a9d', // processed_frame_054
+            '226b30e0-480f-448f-9cd3-92b1d315b6e4', // processed_frame_055
+            'ea5ed53f-630c-4cb9-b17e-064a7a7bcfca', // processed_frame_056
+            'ff2513d4-5a34-4344-95e3-6b802f34d368', // processed_frame_057
+            'e223f24c-245a-44bd-9b45-aa841358a5b8', // processed_frame_058
+            '8c95b212-e287-460c-a4de-88e09f3afe58', // processed_frame_059
+            '34e42390-d08f-4283-825a-9e5fc28e1348', // processed_frame_060
+        ];
+
+        try {
+            // 获取动画剪辑
+            const clip = this._coinAnimation.getClip(this.FLIP_ANIM_NAME);
+            if (!clip) {
+                console.warn('[CoinController] 找不到动画剪辑:', this.FLIP_ANIM_NAME);
+                return;
+            }
+
+            // 获取动画总帧数（通过 spriteFrame 关键帧数量计算）
+            const spriteTracks = clip.findTrack('spriteFrame', 'SpriteComponent');
+            if (!spriteTracks || spriteTracks.length === 0) {
+                console.warn('[CoinController] 找不到 spriteFrame 轨道');
+                return;
+            }
+
+            const track = spriteTracks[0];
+            const keyframes = track.keyframes;
+            console.log('[CoinController] 动画总关键帧数:', keyframes.length);
+
+            // 计算最后60帧的起始索引
+            const last60StartIndex = Math.max(0, keyframes.length - 60);
+            console.log('[CoinController] 最后60帧起始索引:', last60StartIndex);
+
+            // 替换最后60帧的 spriteFrame
+            for (let i = last60StartIndex; i < keyframes.length; i++) {
+                const frameIndex = i - last60StartIndex; // 0-59
+                const uuid = zhengmianFrameUuids[frameIndex] + '@f9941';
+                
+                try {
+                    const spriteFrame = await this.loadSpriteFrame(uuid);
+                    if (spriteFrame) {
+                        keyframes[i].value = spriteFrame;
+                    }
+                } catch (e) {
+                    console.warn('[CoinController] 加载精灵帧失败:', uuid, e);
+                }
+            }
+
+            console.log('[CoinController] 成功替换', keyframes.length - last60StartIndex, '个关键帧');
+        } catch (error) {
+            console.error('[CoinController] 替换关键帧时出错:', error);
+        }
+    }
+
+    /**
+     * 通过 UUID 加载 SpriteFrame
+     */
+    private loadSpriteFrame(uuid: string): Promise<SpriteFrame | null> {
+        return new Promise((resolve) => {
+            resources.load(uuid.replace(/@f9941$/, ''), SpriteFrame, (err, spriteFrame) => {
+                if (err) {
+                    console.warn('[CoinController] 加载 SpriteFrame 失败:', uuid, err);
+                    resolve(null);
+                } else {
+                    resolve(spriteFrame);
+                }
+            });
+        });
     }
 
     /**

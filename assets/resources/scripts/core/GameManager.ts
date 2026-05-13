@@ -161,10 +161,107 @@ export class GameManager {
     }
 
     /**
-     * 执行一次抛硬币
+     * 预定的翻转结果（在动画播放前生成，确保动画和逻辑使用相同的结果）
+     */
+    private _pendingResult: FlipResult | null = null;
+
+    /**
+     * 准备一次抛硬币的结果（生成并存储结果，但不修改游戏状态）
+     * 必须在 playFlipAnimation 之前调用
+     * @returns 准备的结果
+     */
+    prepareFlip(): FlipResult {
+        // 生成结果并存储，确保后续 flipCoin 使用相同的结果
+        const isHead = this.judgeHeadOrTail();
+        const isCrit = isHead ? this.judgeCritical() : false;
+        const newStreak = isHead ? this._streak + 1 : 0;
+        const score = isHead ? this.calculateScore(newStreak, isCrit) : 0;
+
+        this._pendingResult = {
+            isHead,
+            isCrit,
+            streak: newStreak,
+            score
+        };
+
+        console.log(`[GameManager] prepareFlip: ${isHead ? '正面' : '背面'}, 暴击: ${isCrit}, 连击: ${newStreak}, 得分: ${score}`);
+        return this._pendingResult;
+    }
+
+    /**
+     * 获取预定的翻转结果（不消耗）
+     * @returns 预定的结果
+     */
+    getPendingResult(): FlipResult | null {
+        return this._pendingResult;
+    }
+
+    /**
+     * 执行一次抛硬币（使用预存的结果）
      * @returns 抛硬币结果
      */
     flipCoin(): FlipResult {
+        // 如果没有预存结果，使用旧版随机生成
+        if (!this._pendingResult) {
+            console.warn('[GameManager] flipCoin 被直接调用，无预存结果，将随机生成');
+            return this.flipCoinLegacy();
+        }
+
+        // 如果正在翻转中，返回空结果
+        if (this._isFlipping) {
+            console.warn('[GameManager] 正在翻转中，请勿重复点击');
+            return null as any;
+        }
+
+        this._isFlipping = true;
+
+        let result: FlipResult;
+
+        try {
+            // 使用预存的结果，应用状态变更
+            const pending = this._pendingResult;
+
+            // 增加翻转次数统计
+            this._playerData.incrementFlipCount();
+
+            // 更新连击状态
+            if (pending.isHead) {
+                this._streak = pending.streak;
+                if (pending.isCrit) {
+                    this._critCount++;
+                }
+            } else {
+                this._streak = 0;
+            }
+
+            result = {
+                isHead: pending.isHead,
+                isCrit: pending.isCrit,
+                streak: pending.streak,
+                score: pending.score
+            };
+
+            // 触发回调通知 UI 更新
+            this.notifyFlip(result);
+
+            console.log(`[GameManager] flipCoin 执行完成: ${result.isHead ? '正面' : '背面'}, 暴击: ${result.isCrit}, 连击: ${result.streak}, 得分: ${result.score}`);
+        } catch (error) {
+            console.error('[GameManager] flipCoin 执行出错:', error);
+            result = null as any;
+        } finally {
+            // 无论如何都要重置翻转状态
+            this._isFlipping = false;
+            this._pendingResult = null;
+        }
+
+        return result;
+    }
+
+    /**
+     * 旧版 flipCoin（兼容直接调用，不使用预存结果）
+     * @returns 抛硬币结果
+     */
+    private flipCoinLegacy(): FlipResult {
         // 如果正在翻转中，返回空结果
         if (this._isFlipping) {
             console.warn('[GameManager] 正在翻转中，请勿重复点击');
@@ -193,7 +290,7 @@ export class GameManager {
             // 触发回调通知 UI 更新
             this.notifyFlip(result);
 
-            console.log(`[GameManager] 翻转结果: ${result.isHead ? '正面' : '背面'}, 暴击: ${result.isCrit}, 连击: ${result.streak}, 得分: ${result.score}`);
+            console.log(`[GameManager] flipCoinLegacy 翻转结果: ${result.isHead ? '正面' : '背面'}, 暴击: ${result.isCrit}, 连击: ${result.streak}, 得分: ${result.score}`);
         } catch (error) {
             console.error('[GameManager] flipCoin 执行出错:', error);
             result = null as any;
