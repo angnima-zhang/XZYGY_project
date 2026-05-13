@@ -173,29 +173,34 @@ export class GameManager {
 
         this._isFlipping = true;
 
-        // 增加翻转次数统计
-        this._playerData.incrementFlipCount();
-
-        // 判定正反面
-        const isHead = this.judgeHeadOrTail();
-
         let result: FlipResult;
 
-        if (isHead) {
-            // 正面：计算得分
-            result = this.processHeadResult();
-        } else {
-            // 背面：无得分
-            result = this.processTailResult();
+        try {
+            // 增加翻转次数统计
+            this._playerData.incrementFlipCount();
+
+            // 判定正反面
+            const isHead = this.judgeHeadOrTail();
+
+            if (isHead) {
+                // 正面：计算得分
+                result = this.processHeadResult();
+            } else {
+                // 背面：无得分
+                result = this.processTailResult();
+            }
+
+            // 触发回调通知 UI 更新
+            this.notifyFlip(result);
+
+            console.log(`[GameManager] 翻转结果: ${result.isHead ? '正面' : '背面'}, 暴击: ${result.isCrit}, 连击: ${result.streak}, 得分: ${result.score}`);
+        } catch (error) {
+            console.error('[GameManager] flipCoin 执行出错:', error);
+            result = null as any;
+        } finally {
+            // 无论如何都要重置翻转状态
+            this._isFlipping = false;
         }
-
-        // 设置翻转为非进行中状态
-        this._isFlipping = false;
-
-        // 触发回调通知 UI 更新
-        this.notifyFlip(result);
-
-        console.log(`[GameManager] 翻转结果: ${result.isHead ? '正面' : '背面'}, 暴击: ${result.isCrit}, 连击: ${result.streak}, 得分: ${result.score}`);
 
         return result;
     }

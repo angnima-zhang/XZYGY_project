@@ -253,6 +253,9 @@ export class CoinController extends Component {
         console.log('[CoinController] ================================');
         console.log('[CoinController] === playFlipAnimation 被调用 ===');
         console.log('[CoinController] ================================');
+
+        // 重置防重入标志
+        this._flipFinishedHandled = false;
         
         this._isAnimating = true;
         console.log('[CoinController] _isAnimating 设置为 true');
@@ -267,6 +270,14 @@ export class CoinController extends Component {
             console.log('[CoinController] Animation 组件当前的 clips:', this._coinAnimation.clips.map(c => c.name));
             console.log('[CoinController] Animation 当前是否正在播放:', this._coinAnimation.isPlaying);
             console.log('[CoinController] 设置的目标时长:', this.flipDuration);
+
+            // 先停止当前动画，避免状态冲突
+            try {
+                this._coinAnimation.stop();
+                console.log('[CoinController] 已停止之前的动画');
+            } catch (e) {
+                console.warn('[CoinController] 停止动画时出错:', e);
+            }
 
             // 尝试播放动画
             try {
@@ -290,6 +301,8 @@ export class CoinController extends Component {
                 console.log('[CoinController] 动画播放后 currentClip 名称:', this._coinAnimation.currentClip?.name || 'null');
             } catch (error) {
                 console.error('[CoinController] 播放动画时发生异常:', error);
+                console.error('[CoinController] 动画播放失败，执行状态恢复');
+                this.recoverAnimationState();
             }
         } else {
             console.warn('[CoinController] === Animation 组件未找到，使用备用方案 ===');
@@ -308,14 +321,45 @@ export class CoinController extends Component {
 
     /**
      * 翻转动画结束回调
+     * 注意：此方法可能被多次触发，需要防重入
      */
+    private _flipFinishedHandled: boolean = false;
+
     private onFlipAnimationFinished(): void {
+        // 防止重复触发
+        if (this._flipFinishedHandled) {
+            console.log('[CoinController] onFlipAnimationFinished 已处理过，跳过');
+            return;
+        }
+        this._flipFinishedHandled = true;
+
         console.log('[CoinController] ================================');
         console.log('[CoinController] === onFlipAnimationFinished 被调用 ===');
         console.log('[CoinController] ================================');
         console.log('[CoinController] 翻转动画结束，调用 flipCoin');
-        // 动画结束后调用 GameManager 处理逻辑
-        this._gameManager.flipCoin();
+
+        // 调用 GameManager 处理逻辑
+        const result = this._gameManager.flipCoin();
+
+        // 如果 flipCoin 返回 null（正在翻转中），也要恢复状态
+        if (!result) {
+            console.warn('[CoinController] flipCoin 返回 null，手动恢复动画状态');
+            this.recoverAnimationState();
+        }
+    }
+
+    /**
+     * 恢复动画状态（用于异常情况下的状态恢复）
+     */
+    private recoverAnimationState(): void {
+        console.log('[CoinController] 执行状态恢复');
+        
+        // 恢复所有按钮
+        this.enableAllButtons();
+
+        // 重置动画状态
+        this._isAnimating = false;
+        this._flipFinishedHandled = false;
     }
 
     /**

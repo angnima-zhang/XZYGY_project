@@ -26,7 +26,7 @@
  * 将此脚本挂载到 vfx 节点上，然后通过 VfxManager 调用 play/stop 方法
  */
 
-import { _decorator, Component, Animation } from 'cc';
+import { _decorator, Component, Animation, WrapMode } from 'cc';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -116,7 +116,10 @@ export class VfxController extends Component {
         this._isPlaying = true;
 
         // 设置循环模式
-        this.animation.wrapMode = this.loop ? Animation.WrapMode.Loop : Animation.WrapMode.Normal;
+        const wrapMode = this.loop ? WrapMode.Loop : WrapMode.Normal;
+        if (this.animation.clips.length > 0) {
+            this.animation.clips[0].wrapMode = wrapMode;
+        }
 
         // 播放动画
         this.animation.play();
