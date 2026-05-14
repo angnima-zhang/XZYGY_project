@@ -173,7 +173,7 @@ export class GameManager {
     prepareFlip(): FlipResult {
         // 生成结果并存储，确保后续 flipCoin 使用相同的结果
         const isHead = this.judgeHeadOrTail();
-        const isCrit = isHead ? this.judgeCritical() : false;
+        const isCrit = isHead ? this.judgeCrit() : false;
         const newStreak = isHead ? this._streak + 1 : 0;
         const score = isHead ? this.calculateScore(newStreak, isCrit) : 0;
 
