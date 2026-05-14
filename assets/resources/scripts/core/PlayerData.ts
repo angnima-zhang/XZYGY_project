@@ -123,7 +123,7 @@ export class PlayerData {
     private readonly RESET_HOUR = 4;
 
     /** 8种升级项的固定配置（不会随游戏进度变化） */
-    private readonly UPGRADE_CONFIGS: Record<UpgradeType, UpgradeConfig> = {
+    private UPGRADE_CONFIGS: Record<UpgradeType, UpgradeConfig> = {
         value: {
             name: '面值',
             initialValue: 1,
@@ -359,6 +359,51 @@ export class PlayerData {
         console.log(`[PlayerData] 升级成功: ${this.UPGRADE_CONFIGS[type].name} ${this.getUpgradeValue(type)} -> ${newValue}`);
         this.save();
         return true;
+    }
+
+    // ==================== 调试配置相关 ====================
+
+    /**
+     * 设置升级项的初始值和初始价格（用于调试）
+     */
+    setUpgradeConfig(type: UpgradeType, initialValue: number, initialPrice: number): void {
+        if (!this.UPGRADE_CONFIGS[type]) return;
+        this.UPGRADE_CONFIGS[type].initialValue = initialValue;
+        this.UPGRADE_CONFIGS[type].initialPrice = initialPrice;
+    }
+
+    /**
+     * 设置全局价格增长系数（用于调试）
+     */
+    setGlobalGrowthFactor(factor: number): void {
+        (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
+            this.UPGRADE_CONFIGS[type].growthFactor = factor;
+        });
+    }
+
+    /**
+     * 应用调试配置到当前升级状态（将当前状态重置为配置中的初始值）
+     */
+    applyDebugConfig(): void {
+        (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
+            const config = this.UPGRADE_CONFIGS[type];
+            this._upgrades[type] = {
+                value: config.initialValue,
+                price: config.initialPrice,
+                level: 0
+            };
+        });
+        this._balance = 0;
+        this._currentStreak = 0;
+        this._pityCounter = 0;
+        this._stats = {
+            totalFlips: 0,
+            totalCrits: 0,
+            maxBalance: 0,
+            maxStreak: 0,
+            totalAutoTime: 0
+        };
+        this.save();
     }
 
     // ==================== 生涯统计相关 ====================
