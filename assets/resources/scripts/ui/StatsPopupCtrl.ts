@@ -223,7 +223,8 @@ export class StatsPopupCtrl extends Component {
 
     /**
      * 刷新预期收益
-     * 公式：E = 面值 + (暴击率 × 暴击加成) + (正面概率 × 暴击加成) + 连击加成 / 2
+     * 公式：面值 + 面值×暴击加成×暴击率 + 面值×连击加成×(连击率×连击率)
+     * 连击率 = 正面概率 × 正面概率（连续2次及以上正面才算连击）
      */
     private refreshExpectedValue(): void {
         if (!this.expectedValueLabel || !this._gameManager) return;

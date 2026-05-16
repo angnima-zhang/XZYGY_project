@@ -3799,7 +3799,7 @@
         "__id__": 97
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 101
@@ -35262,7 +35262,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "Label-001",
+    "_name": "num",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {

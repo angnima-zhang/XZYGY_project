@@ -258,6 +258,28 @@ export class VfxManager extends Component {
     }
 
     /**
+     * 开始循环播放 VFX 特效（已在循环中则不重播）
+     * @param name VFX 名称
+     */
+    private playLoopingVfx(name: string): void {
+        const controllers = this.getControllers(name);
+        for (const ctrl of controllers) {
+            ctrl.playLooping();
+        }
+    }
+
+    /**
+     * 停止循环播放 VFX 特效
+     * @param name VFX 名称
+     */
+    private stopLoopingVfx(name: string): void {
+        const controllers = this.getControllers(name);
+        for (const ctrl of controllers) {
+            ctrl.stopLooping();
+        }
+    }
+
+    /**
      * 停止 VFX 特效（支持多个同名控制器）
      * @param name VFX 名称
      */
@@ -313,12 +335,20 @@ export class VfxManager extends Component {
     }
 
     /**
-     * 播放连击特效 + 音效
-     * 触发时机：连击数增加时
+     * 开始连击特效循环（持续连击时不重播）
+     * 触发时机：连击数持续增加时
      */
     playStreak(): void {
-        this.playVfx('streak', 0.5);
+        this.playLoopingVfx('streak');
         this.playAudioClip(this.streakClip);
+    }
+
+    /**
+     * 停止连击特效循环
+     * 触发时机：连击断开时
+     */
+    stopStreak(): void {
+        this.stopLoopingVfx('streak');
     }
 
     /**

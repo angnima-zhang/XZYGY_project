@@ -531,11 +531,11 @@ export class PlayerData {
         const critBonus = this.getUpgradeValue('criticalBonus');
         const headProb = this.getUpgradeValue('lucky') / 100;
         const streakBonus = this.getUpgradeValue('streakBonus');
+        const streakRate = headProb * headProb;
 
         const ev = value 
-            + (critRate * critBonus) 
-            + (headProb * critBonus) 
-            + (streakBonus / 2);
+            + (value * critBonus * critRate) 
+            + (value * streakBonus * streakRate);
 
         return Math.floor(ev);
     }

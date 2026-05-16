@@ -205,19 +205,21 @@ export class GameManager {
         // 生成结果并存储，确保后续 flipCoin 使用相同的结果
         const isHead = this.judgeHeadOrTail();
         const isCrit = isHead ? this.judgeCrit() : false;
-        const newStreak = isHead ? this._playerData.getCurrentStreak() + 1 : 0;
-        const score = isHead ? this.calculateScore(isCrit, newStreak) : 0;
+        // 连击：第1次正面不计入连击（streak=0），第2次连续正面开始 streak=连续次数
+        const consecutiveCount = this._playerData.getCurrentStreak() + 1;
+        const effectiveStreak = consecutiveCount >= 2 ? consecutiveCount : 0;
+        const score = isHead ? this.calculateScore(isCrit, effectiveStreak) : 0;
         const pityCount = isHead ? 0 : this._playerData.getPityCounter() + 1;
 
         this._pendingResult = {
             isHead,
             isCrit,
-            streak: newStreak,
+            streak: effectiveStreak,
             score,
             pityCount
         };
 
-        console.log(`[GameManager] prepareFlip: ${isHead ? '正面' : '背面'}, 暴击: ${isCrit}, 连击: ${newStreak}, 得分: ${score}`);
+        console.log(`[GameManager] prepareFlip: ${isHead ? '正面' : '背面'}, 暴击: ${isCrit}, 连击: ${effectiveStreak}, 得分: ${score}`);
         return this._pendingResult;
     }
 
@@ -227,7 +229,9 @@ export class GameManager {
     private applyPreparedResult(pending: FlipResult): FlipResult {
         if (pending.isHead) {
             this._playerData.resetPityCounter();
-            this._playerData.updateStreak(pending.streak);
+            // 根据有效连击数反推连续次数存储到 PlayerData
+            const consecutiveStreak = pending.streak > 0 ? pending.streak : 1;
+            this._playerData.updateStreak(consecutiveStreak);
 
             if (pending.isCrit) {
                 this._playerData.incrementCritCount();
@@ -236,7 +240,8 @@ export class GameManager {
                 this._vfxManager?.playHead();
             }
 
-            if (pending.streak > 1) {
+            // 连击特效（有效连击 > 0，即连续2次及以上正面）
+            if (pending.streak > 0) {
                 this._vfxManager?.playStreak();
             }
 
@@ -254,6 +259,7 @@ export class GameManager {
             };
         }
 
+        this._vfxManager?.stopStreak();
         this._playerData.updateStreak(0);
         const reachedPity = this._playerData.incrementPityCounter();
         this._vfxManager?.playTail();
@@ -403,9 +409,11 @@ export class GameManager {
         // 重置保底计数器
         this._playerData.resetPityCounter();
 
-        // 增加连击
-        const currentStreak = this._playerData.getCurrentStreak() + 1;
-        this._playerData.updateStreak(currentStreak);
+        // 连击计数：第1次正面不计入连击（streak=0），第2次连续正面开始 streak=1，依此类推
+        const prevStreak = this._playerData.getCurrentStreak();
+        const consecutiveStreak = prevStreak + 1;
+        this._playerData.updateStreak(consecutiveStreak);
+        const effectiveStreak = consecutiveStreak > 1 ? consecutiveStreak : 0;
 
         // 判定是否暴击
         const isCrit = this.judgeCrit();
@@ -419,13 +427,13 @@ export class GameManager {
             this._vfxManager?.playHead();
         }
 
-        // 连击特效
-        if (currentStreak > 1) {
+        // 连击特效（连续2次及以上正面才触发）
+        if (effectiveStreak > 0) {
             this._vfxManager?.playStreak();
         }
 
         // 计算得分
-        const score = this.calculateScore(isCrit, currentStreak);
+        const score = this.calculateScore(isCrit, effectiveStreak);
 
         // 增加余额
         this._playerData.addBalance(score);
@@ -434,7 +442,7 @@ export class GameManager {
         return {
             isHead: true,
             isCrit: isCrit,
-            streak: currentStreak,
+            streak: effectiveStreak,
             score: score,
             pityCount: 0
         };
@@ -446,6 +454,9 @@ export class GameManager {
      * @returns 翻转结果
      */
     private processTailResult(): FlipResult {
+        // 停止连击特效
+        this._vfxManager?.stopStreak();
+
         // 重置连击
         this._playerData.updateStreak(0);
 
@@ -485,15 +496,15 @@ export class GameManager {
      * 计算得分
      * 公式：单次得分 = 面值 + 暴击加成（若有暴击）+ 连击加成 × 连击数
      * @param isCrit 是否暴击
-     * @param streak 当前连击数
+     * @param effectiveStreak 有效连击数（0 或 2+）
      * @returns 得分
      */
-    private calculateScore(isCrit: boolean, streak: number): number {
+    private calculateScore(isCrit: boolean, effectiveStreak: number): number {
         const value = this._playerData.getUpgradeValue('value');
         const critBonus = isCrit ? this._playerData.getUpgradeValue('criticalBonus') : 0;
         const streakBonus = this._playerData.getUpgradeValue('streakBonus');
 
-        const score = value + critBonus + (streakBonus * streak);
+        const score = value + critBonus + (streakBonus * effectiveStreak);
         return Math.max(0, Math.floor(score));
     }
 
