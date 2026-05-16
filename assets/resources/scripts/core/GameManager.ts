@@ -174,18 +174,69 @@ export class GameManager {
         // 生成结果并存储，确保后续 flipCoin 使用相同的结果
         const isHead = this.judgeHeadOrTail();
         const isCrit = isHead ? this.judgeCrit() : false;
-        const newStreak = isHead ? this._streak + 1 : 0;
-        const score = isHead ? this.calculateScore(newStreak, isCrit) : 0;
+        const newStreak = isHead ? this._playerData.getCurrentStreak() + 1 : 0;
+        const score = isHead ? this.calculateScore(isCrit, newStreak) : 0;
+        const pityCount = isHead ? 0 : this._playerData.getPityCounter() + 1;
 
         this._pendingResult = {
             isHead,
             isCrit,
             streak: newStreak,
-            score
+            score,
+            pityCount
         };
 
         console.log(`[GameManager] prepareFlip: ${isHead ? '正面' : '背面'}, 暴击: ${isCrit}, 连击: ${newStreak}, 得分: ${score}`);
         return this._pendingResult;
+    }
+
+    /**
+     * 应用动画前预定好的翻转结果，并同步玩家数据与特效。
+     */
+    private applyPreparedResult(pending: FlipResult): FlipResult {
+        if (pending.isHead) {
+            this._playerData.resetPityCounter();
+            this._playerData.updateStreak(pending.streak);
+
+            if (pending.isCrit) {
+                this._playerData.incrementCritCount();
+                this._vfxManager?.playCritical();
+            } else {
+                this._vfxManager?.playHead();
+            }
+
+            if (pending.streak > 1) {
+                this._vfxManager?.playStreak();
+            }
+
+            if (pending.score > 0) {
+                this._playerData.addBalance(pending.score);
+            }
+
+            return {
+                isHead: true,
+                isCrit: pending.isCrit,
+                streak: pending.streak,
+                score: pending.score,
+                pityCount: 0
+            };
+        }
+
+        this._playerData.updateStreak(0);
+        const reachedPity = this._playerData.incrementPityCounter();
+        this._vfxManager?.playTail();
+
+        if (reachedPity) {
+            this._vfxManager?.playPity();
+        }
+
+        return {
+            isHead: false,
+            isCrit: false,
+            streak: 0,
+            score: 0,
+            pityCount: this._playerData.getPityCounter()
+        };
     }
 
     /**
@@ -200,7 +251,7 @@ export class GameManager {
      * 执行一次抛硬币（使用预存的结果）
      * @returns 抛硬币结果
      */
-    flipCoin(): FlipResult {
+    flipCoin(): FlipResult | null {
         // 如果没有预存结果，使用旧版随机生成
         if (!this._pendingResult) {
             console.warn('[GameManager] flipCoin 被直接调用，无预存结果，将随机生成');
@@ -210,7 +261,7 @@ export class GameManager {
         // 如果正在翻转中，返回空结果
         if (this._isFlipping) {
             console.warn('[GameManager] 正在翻转中，请勿重复点击');
-            return null as any;
+            return null;
         }
 
         this._isFlipping = true;
@@ -224,22 +275,7 @@ export class GameManager {
             // 增加翻转次数统计
             this._playerData.incrementFlipCount();
 
-            // 更新连击状态
-            if (pending.isHead) {
-                this._streak = pending.streak;
-                if (pending.isCrit) {
-                    this._critCount++;
-                }
-            } else {
-                this._streak = 0;
-            }
-
-            result = {
-                isHead: pending.isHead,
-                isCrit: pending.isCrit,
-                streak: pending.streak,
-                score: pending.score
-            };
+            result = this.applyPreparedResult(pending);
 
             // 触发回调通知 UI 更新
             this.notifyFlip(result);
@@ -261,11 +297,11 @@ export class GameManager {
      * 旧版 flipCoin（兼容直接调用，不使用预存结果）
      * @returns 抛硬币结果
      */
-    private flipCoinLegacy(): FlipResult {
+    private flipCoinLegacy(): FlipResult | null {
         // 如果正在翻转中，返回空结果
         if (this._isFlipping) {
             console.warn('[GameManager] 正在翻转中，请勿重复点击');
-            return null as any;
+            return null;
         }
 
         this._isFlipping = true;

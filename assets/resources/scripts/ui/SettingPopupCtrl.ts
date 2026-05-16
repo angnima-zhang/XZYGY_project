@@ -160,21 +160,21 @@ export class SettingPopupCtrl extends Component {
             if (this.musicToggleNode && this.musicToggleNode.isValid) {
                 this.musicToggleNode.off(Node.EventType.TOUCH_END, this.onMusicToggleClick, this);
             }
-            if (this.musicOffNode && this.musicOffNode.isValid) {
-                this.musicOffNode.off(Node.EventType.TOUCH_END, this.onMusicToggleClick, this);
-            }
+            // if (this.musicOffNode && this.musicOffNode.isValid) {
+            //     this.musicOffNode.off(Node.EventType.TOUCH_END, this.onMusicToggleClick, this);
+            // }
             if (this.soundToggleNode && this.soundToggleNode.isValid) {
                 this.soundToggleNode.off(Node.EventType.TOUCH_END, this.onSoundToggleClick, this);
             }
-            if (this.soundOffNode && this.soundOffNode.isValid) {
-                this.soundOffNode.off(Node.EventType.TOUCH_END, this.onSoundToggleClick, this);
-            }
+            // if (this.soundOffNode && this.soundOffNode.isValid) {
+            //     this.soundOffNode.off(Node.EventType.TOUCH_END, this.onSoundToggleClick, this);
+            // }
             if (this.vibrateToggleNode && this.vibrateToggleNode.isValid) {
                 this.vibrateToggleNode.off(Node.EventType.TOUCH_END, this.onVibrateToggleClick, this);
             }
-            if (this.vibrateOffNode && this.vibrateOffNode.isValid) {
-                this.vibrateOffNode.off(Node.EventType.TOUCH_END, this.onVibrateToggleClick, this);
-            }
+            // if (this.vibrateOffNode && this.vibrateOffNode.isValid) {
+            //     this.vibrateOffNode.off(Node.EventType.TOUCH_END, this.onVibrateToggleClick, this);
+            // }
         } catch (e) {
             console.warn('[SettingPopupCtrl] onDestroy cleanup error:', e);
         }

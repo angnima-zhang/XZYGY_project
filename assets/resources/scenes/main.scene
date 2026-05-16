@@ -47353,6 +47353,30 @@
     "totalAutoTimeLabel": {
       "__id__": 980
     },
+    "valueLabel": {
+      "__id__": 1013
+    },
+    "speedLabel": {
+      "__id__": 1039
+    },
+    "luckyLabel": {
+      "__id__": 1062
+    },
+    "criticalLabel": {
+      "__id__": 1088
+    },
+    "criticalBonusLabel": {
+      "__id__": 1114
+    },
+    "pityLabel": {
+      "__id__": 1140
+    },
+    "streakBonusLabel": {
+      "__id__": 1166
+    },
+    "timeLabel": {
+      "__id__": 1192
+    },
     "_id": "37rfLPg9VCIoPpEyaXnZpk"
   },
   {

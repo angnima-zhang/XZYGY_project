@@ -126,6 +126,11 @@ export class CoinController extends Component {
     private _vfxManager: VfxManager | null = null;
 
     /**
+     * 缓存翻转回调引用，确保 onDestroy 能正确注销监听。
+     */
+    private _boundOnFlipResult: (result: FlipResult) => void = this.onFlipResult.bind(this);
+
+    /**
      * 是否正在播放动画中
      */
     private _isAnimating: boolean = false;
@@ -133,12 +138,17 @@ export class CoinController extends Component {
     /**
      * 预加载的正面精灵帧缓存
      */
-    private _zhengmianFrames: SpriteFrame[] = [];
+    private _zhengmianFrames: Array<SpriteFrame | null> = [];
 
     /**
      * 正面帧切换定时器句柄
      */
     private _zhengmianTimerHandle: number = -1;
+
+    /**
+     * 正面帧切换启动定时器句柄
+     */
+    private _zhengmianStartTimerHandle: number = -1;
 
     /**
      * 当前正面帧索引
@@ -199,7 +209,7 @@ export class CoinController extends Component {
         this._vfxManager = this._gameManager.getVfxManager();
 
         // 注册翻转事件回调
-        this._gameManager.onFlip(this.onFlipResult.bind(this));
+        this._gameManager.onFlip(this._boundOnFlipResult);
 
         // 绑定硬币点击事件
         this.node.on(Node.EventType.TOUCH_END, this.onCoinClick, this);
@@ -242,7 +252,7 @@ export class CoinController extends Component {
 
         // 移除事件监听
         if (this._gameManager) {
-            this._gameManager.offFlip(this.onFlipResult.bind(this));
+            this._gameManager.offFlip(this._boundOnFlipResult);
         }
         this.node.off(Node.EventType.TOUCH_END, this.onCoinClick, this);
     }
@@ -320,24 +330,26 @@ export class CoinController extends Component {
     private preloadZhengmianFrames(): void {
         const paths: string[] = [];
         for (let i = 1; i <= 60; i++) {
-            paths.push(`images/正面/processed_frame_${i.toString().padStart(3, '0')}`);
+            const frameNo = i < 10 ? `00${i}` : i < 100 ? `0${i}` : `${i}`;
+            paths.push(`images/正面/processed_frame_${frameNo}/spriteFrame`);
         }
 
         let loaded = 0;
-        for (const path of paths) {
+        this._zhengmianFrames = new Array(paths.length).fill(null);
+
+        paths.forEach((path, index) => {
             resources.load(path, SpriteFrame, (err, sf) => {
                 loaded++;
                 if (err) {
                     console.warn('[CoinController] 预加载正面帧失败:', path);
-                    this._zhengmianFrames.push(null);
                 } else {
-                    this._zhengmianFrames.push(sf);
+                    this._zhengmianFrames[index] = sf;
                 }
                 if (loaded === paths.length) {
                     console.log('[CoinController] 正面帧预加载完成:', this._zhengmianFrames.filter(Boolean).length, '/ 60');
                 }
             });
-        }
+        });
     }
 
     /**
@@ -352,7 +364,7 @@ export class CoinController extends Component {
 
         for (const track of clip.tracks) {
             const channel = (track as any)._channel;
-            if (channel?. _curve) {
+            if (channel?._curve) {
                 const values = channel._curve._values;
                 const times = channel._curve._times;
                 if (values && Array.isArray(values) && times && Array.isArray(times)) {
@@ -375,7 +387,10 @@ export class CoinController extends Component {
             ? (keyframeTimes[last60Start + 1] - keyframeTimes[last60Start]) / speed
             : 0.01;
 
-        this.scheduleOnce(() => this.startZhengmianFrameSwap(), startTime);
+        this._zhengmianStartTimerHandle = window.setTimeout(() => {
+            this._zhengmianStartTimerHandle = -1;
+            this.startZhengmianFrameSwap();
+        }, Math.max(0, startTime * 1000));
         console.log('[CoinController] 正面帧切换将在', startTime.toFixed(3), '秒后开始');
     }
 
@@ -416,6 +431,11 @@ export class CoinController extends Component {
      * 停止正面帧切换定时器
      */
     private unscheduleZhengmianTimer(): void {
+        if (this._zhengmianStartTimerHandle >= 0) {
+            clearTimeout(this._zhengmianStartTimerHandle);
+            this._zhengmianStartTimerHandle = -1;
+        }
+
         if (this._zhengmianTimerHandle >= 0) {
             clearInterval(this._zhengmianTimerHandle);
             this._zhengmianTimerHandle = -1;
