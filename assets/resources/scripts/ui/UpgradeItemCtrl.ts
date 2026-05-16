@@ -135,6 +135,8 @@ export class UpgradeItemCtrl extends Component {
      */
     private _upgradeButtonOriginalColor: Color | null = null;
 
+    private _flipCallback: ((result: any) => void) | null = null;
+
     /**
      * 组件加载时调用
      */
@@ -154,21 +156,22 @@ export class UpgradeItemCtrl extends Component {
             this.adButtonNode.on(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
         }
 
+        // 注册翻转事件回调，实时刷新按钮状态
+        this._flipCallback = this._onFlipCallback.bind(this);
+        this._gameManager.onFlip(this._flipCallback);
+
         console.log(`[UpgradeItemCtrl] 初始化完成，类型: ${this.upgradeType}`);
     }
 
-    /**
-     * 组件启用时调用
-     */
     onEnable() {
         this.refreshUI();
     }
 
-    /**
-     * 组件销毁时调用
-     */
     onDestroy() {
         try {
+            if (this._gameManager && this._flipCallback) {
+                this._gameManager.offFlip(this._flipCallback);
+            }
             if (this.upgradeButtonNode && this.upgradeButtonNode.isValid) {
                 this.upgradeButtonNode.off(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
             }
@@ -177,6 +180,12 @@ export class UpgradeItemCtrl extends Component {
             }
         } catch (e) {
             console.warn('[UpgradeItemCtrl] onDestroy cleanup error:', e);
+        }
+    }
+
+    private _onFlipCallback(): void {
+        if (this.node.activeInHierarchy) {
+            this.updateButtonState();
         }
     }
 

@@ -75,6 +75,8 @@ export class AutoFlipBuyCtrl extends Component {
      */
     private _buyButtonOriginalColor: Color | null = null;
 
+    private _flipCallback: ((result: any) => void) | null = null;
+
     /**
      * 组件加载时调用
      */
@@ -94,21 +96,22 @@ export class AutoFlipBuyCtrl extends Component {
             this.adButtonNode.on(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
         }
 
+        // 注册翻转事件回调，实时刷新按钮状态
+        this._flipCallback = this._onFlipCallback.bind(this);
+        this._gameManager.onFlip(this._flipCallback);
+
         console.log('[AutoFlipBuyCtrl] 初始化完成');
     }
 
-    /**
-     * 组件启用时调用
-     */
     onEnable() {
         this.refreshUI();
     }
 
-    /**
-     * 组件销毁时调用
-     */
     onDestroy() {
         try {
+            if (this._gameManager && this._flipCallback) {
+                this._gameManager.offFlip(this._flipCallback);
+            }
             if (this.buyButtonNode && this.buyButtonNode.isValid) {
                 this.buyButtonNode.off(Node.EventType.TOUCH_END, this.onBuyClick, this);
             }
@@ -117,6 +120,12 @@ export class AutoFlipBuyCtrl extends Component {
             }
         } catch (e) {
             console.warn('[AutoFlipBuyCtrl] onDestroy cleanup error:', e);
+        }
+    }
+
+    private _onFlipCallback(): void {
+        if (this.node.activeInHierarchy) {
+            this.updateButtonState();
         }
     }
 
