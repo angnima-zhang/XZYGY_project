@@ -77,6 +77,8 @@ export class AutoFlipBuyCtrl extends Component {
 
     private _flipCallback: ((result: any) => void) | null = null;
 
+    private _balanceChangeCallback: (() => void) | null = null;
+
     /**
      * 组件加载时调用
      */
@@ -97,8 +99,12 @@ export class AutoFlipBuyCtrl extends Component {
         }
 
         // 注册翻转事件回调，实时刷新按钮状态
-        this._flipCallback = this._onFlipCallback.bind(this);
+        this._flipCallback = this._onEventCallback.bind(this);
         this._gameManager.onFlip(this._flipCallback);
+
+        // 注册余额变更回调，实时刷新按钮状态
+        this._balanceChangeCallback = this._onEventCallback.bind(this);
+        this._gameManager.onBalanceChange(this._balanceChangeCallback);
 
         console.log('[AutoFlipBuyCtrl] 初始化完成');
     }
@@ -109,8 +115,13 @@ export class AutoFlipBuyCtrl extends Component {
 
     onDestroy() {
         try {
-            if (this._gameManager && this._flipCallback) {
-                this._gameManager.offFlip(this._flipCallback);
+            if (this._gameManager) {
+                if (this._flipCallback) {
+                    this._gameManager.offFlip(this._flipCallback);
+                }
+                if (this._balanceChangeCallback) {
+                    this._gameManager.offBalanceChange(this._balanceChangeCallback);
+                }
             }
             if (this.buyButtonNode && this.buyButtonNode.isValid) {
                 this.buyButtonNode.off(Node.EventType.TOUCH_END, this.onBuyClick, this);
@@ -123,7 +134,7 @@ export class AutoFlipBuyCtrl extends Component {
         }
     }
 
-    private _onFlipCallback(): void {
+    private _onEventCallback(): void {
         if (this.node.activeInHierarchy) {
             this.updateButtonState();
         }
@@ -152,6 +163,9 @@ export class AutoFlipBuyCtrl extends Component {
 
         // 扣除余额
         this._gameManager.getPlayerData().subtractBalance(price);
+
+        // 通知余额变更
+        this._gameManager.notifyBalanceChange();
 
         // 启动自动翻转
         this._gameManager.startAutoFlip();

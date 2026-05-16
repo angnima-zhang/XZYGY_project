@@ -46,6 +46,8 @@ interface FlipResult {
  */
 type FlipCallback = (result: FlipResult) => void;
 
+type BalanceChangeCallback = () => void;
+
 export class GameManager {
     /** 单例实例 */
     private static _instance: GameManager | null = null;
@@ -66,6 +68,9 @@ export class GameManager {
 
     /** 翻转事件回调列表 */
     private _flipCallbacks: FlipCallback[] = [];
+
+    /** 余额变更回调列表 */
+    private _balanceChangeCallbacks: BalanceChangeCallback[] = [];
 
     /** 是否正在翻转中（防止动画期间重复点击） */
     private _isFlipping: boolean = false;
@@ -116,6 +121,32 @@ export class GameManager {
         const index = this._flipCallbacks.indexOf(callback);
         if (index >= 0) {
             this._flipCallbacks.splice(index, 1);
+        }
+    }
+
+    /**
+     * 注册余额变更事件回调
+     */
+    onBalanceChange(callback: BalanceChangeCallback): void {
+        this._balanceChangeCallbacks.push(callback);
+    }
+
+    /**
+     * 移除余额变更事件回调
+     */
+    offBalanceChange(callback: BalanceChangeCallback): void {
+        const index = this._balanceChangeCallbacks.indexOf(callback);
+        if (index >= 0) {
+            this._balanceChangeCallbacks.splice(index, 1);
+        }
+    }
+
+    /**
+     * 通知所有余额变更监听者
+     */
+    notifyBalanceChange(): void {
+        for (const callback of this._balanceChangeCallbacks) {
+            callback();
         }
     }
 
@@ -211,6 +242,7 @@ export class GameManager {
 
             if (pending.score > 0) {
                 this._playerData.addBalance(pending.score);
+                this.notifyBalanceChange();
             }
 
             return {
@@ -397,6 +429,7 @@ export class GameManager {
 
         // 增加余额
         this._playerData.addBalance(score);
+        this.notifyBalanceChange();
 
         return {
             isHead: true,
@@ -475,6 +508,8 @@ export class GameManager {
         if (success) {
             // 触发升级 VFX + 音效
             this._vfxManager?.playUpgrade(type);
+            // 通知余额变更
+            this.notifyBalanceChange();
         }
         
         return success;

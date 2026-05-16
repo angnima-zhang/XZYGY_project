@@ -137,6 +137,8 @@ export class UpgradeItemCtrl extends Component {
 
     private _flipCallback: ((result: any) => void) | null = null;
 
+    private _balanceChangeCallback: (() => void) | null = null;
+
     /**
      * 组件加载时调用
      */
@@ -157,8 +159,12 @@ export class UpgradeItemCtrl extends Component {
         }
 
         // 注册翻转事件回调，实时刷新按钮状态
-        this._flipCallback = this._onFlipCallback.bind(this);
+        this._flipCallback = this._onEventCallback.bind(this);
         this._gameManager.onFlip(this._flipCallback);
+
+        // 注册余额变更回调，实时刷新按钮状态
+        this._balanceChangeCallback = this._onEventCallback.bind(this);
+        this._gameManager.onBalanceChange(this._balanceChangeCallback);
 
         console.log(`[UpgradeItemCtrl] 初始化完成，类型: ${this.upgradeType}`);
     }
@@ -169,8 +175,13 @@ export class UpgradeItemCtrl extends Component {
 
     onDestroy() {
         try {
-            if (this._gameManager && this._flipCallback) {
-                this._gameManager.offFlip(this._flipCallback);
+            if (this._gameManager) {
+                if (this._flipCallback) {
+                    this._gameManager.offFlip(this._flipCallback);
+                }
+                if (this._balanceChangeCallback) {
+                    this._gameManager.offBalanceChange(this._balanceChangeCallback);
+                }
             }
             if (this.upgradeButtonNode && this.upgradeButtonNode.isValid) {
                 this.upgradeButtonNode.off(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
@@ -183,7 +194,7 @@ export class UpgradeItemCtrl extends Component {
         }
     }
 
-    private _onFlipCallback(): void {
+    private _onEventCallback(): void {
         if (this.node.activeInHierarchy) {
             this.updateButtonState();
         }

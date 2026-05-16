@@ -69,11 +69,15 @@ export class MainUI extends Component {
     private _targetBalance: number = 0;
 
     /**
+     * 余额变更回调引用（用于 onDestroy 中移除）
+     */
+    private _balanceChangeCallback: (() => void) | null = null;
+
+    /**
      * 组件加载时调用
      * 初始化组件引用和事件监听
      */
     onLoad() {
-        // 获取游戏管理器实例
         this._gameManager = GameManager.getInstance();
         console.log('[MainUI] onLoad, _gameManager:', !!this._gameManager);
         console.log('[MainUI] onLoad, balanceLabel:', this.balanceLabel ? '已绑定' : '未绑定');
@@ -84,6 +88,12 @@ export class MainUI extends Component {
         // 注册翻转事件回调
         this._gameManager.onFlip(this.onFlipResult.bind(this));
         console.log('[MainUI] 翻转事件回调已注册');
+
+        // 注册余额变更回调（购买升级时触发）
+        this._balanceChangeCallback = this.onBalanceChanged.bind(this);
+        this._gameManager.onBalanceChange(this._balanceChangeCallback);
+        console.log('[MainUI] 余额变更回调已注册');
+
         console.log('[MainUI] 初始化完成');
     }
 
@@ -98,9 +108,20 @@ export class MainUI extends Component {
      */
     onDestroy() {
         if (this._gameManager) {
-            // 注意：这里需要确保传入的回调引用一致
-            // 实际项目中可能需要保存回调引用以便移除
+            this._gameManager.offFlip(this.onFlipResult.bind(this));
+            if (this._balanceChangeCallback) {
+                this._gameManager.offBalanceChange(this._balanceChangeCallback);
+            }
         }
+    }
+
+    /**
+     * 余额变更回调（升级购买等触发）
+     */
+    private onBalanceChanged(): void {
+        console.log('[MainUI] onBalanceChanged 被调用');
+        this.updateBalance();
+        this.updateNeedAmount();
     }
 
     /**
