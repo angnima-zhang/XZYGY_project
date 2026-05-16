@@ -57,6 +57,12 @@ export class DebugConfig extends Component {
     @property({ group: '全局', displayName: '价格增长系数', step: 0.05, min: 1.0 })
     global_growthFactor: number = 1.2;
 
+    @property({ group: '全局', displayName: '翻转动画时长(秒)', step: 0.1, min: 0.1 })
+    flipDuration: number = 1.5;
+
+    @property({ group: '全局', displayName: '强制重置数据', tooltip: '勾选后清除 localStorage 并重新初始化所有数据' })
+    forceReset: boolean = false;
+
     onLoad() {
         this.applyToPlayerData();
     }
@@ -75,7 +81,19 @@ export class DebugConfig extends Component {
 
         pd.setGlobalGrowthFactor(this.global_growthFactor);
 
-        pd.applyDebugConfig();
+        // 强制重置：清除 localStorage 后重新初始化
+        if (this.forceReset) {
+            try {
+                localStorage.removeItem('xianzheng_player_data_v3');
+                console.log('[DebugConfig] 已清除 localStorage');
+            } catch (e) {
+                console.warn('[DebugConfig] 清除 localStorage 失败:', e);
+            }
+            pd.applyDebugConfig();
+            console.log('[DebugConfig] 已强制重置所有数据');
+        } else {
+            pd.applyDebugConfig();
+        }
 
         console.log('[DebugConfig] 调试配置已应用到 PlayerData');
     }

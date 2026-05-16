@@ -17,12 +17,12 @@
  * 场景节点对应：
  * - Coin 节点（硬币主体，需挂载此脚本）
  * - criticalHit 节点（暴击特效，默认隐藏）
- * - bonus 节点（奖金显示）
  * - critical 节点（暴击计数）
  * - addScore 节点（飘字，+100,000,000）
  * - streak 节点（连击显示）
  * - autoing 节点（自动中状态）
  * - pity 节点（保底特效）
+ * - config 节点（挂载 DebugConfig 脚本）
  * 
  * 使用方式：
  * 将此脚本挂载到 Coin 节点上即可
@@ -31,6 +31,7 @@
 import { _decorator, Component, Node, Label, Sprite, SpriteFrame, Tween, tween, Vec3, UIOpacity, Color, Button, Animation, resources } from 'cc';
 import { GameManager, FlipResult } from '../core/GameManager';
 import { VfxManager } from './VfxManager';
+import { DebugConfig } from './DebugConfig';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -53,11 +54,7 @@ export class CoinController extends Component {
     @property({ type: Node, displayName: '暴击特效节点', tooltip: 'criticalHit 节点' })
     criticalHitNode: Node | null = null;
 
-    /**
-     * 奖金显示节点
-     */
-    @property({ type: Node, displayName: '奖金显示节点', tooltip: 'bonus 节点' })
-    bonusNode: Node | null = null;
+
 
     /**
      * 暴击计数节点
@@ -78,6 +75,18 @@ export class CoinController extends Component {
     streakNode: Node | null = null;
 
     /**
+     * 连击 num Label 节点
+     */
+    @property({ type: Label, displayName: '连击num', tooltip: 'streak/num 节点的 Label 组件' })
+    streakNumLabel: Label | null = null;
+
+    /**
+     * 连击 bonus Label 节点
+     */
+    @property({ type: Label, displayName: '连击bonus', tooltip: 'streak/bonus 节点的 Label 组件' })
+    streakBonusLabel: Label | null = null;
+
+    /**
      * 自动中状态节点
      */
     @property({ type: Node, displayName: '自动中状态节点', tooltip: 'autoing 节点' })
@@ -90,15 +99,18 @@ export class CoinController extends Component {
     pityNode: Node | null = null;
 
     /**
-     * 翻转动画时长（秒）
+     * DebugConfig 节点引用（用于获取调试翻转时长）
      */
-    @property({
-        displayName: '翻转动画时长',
-        tooltip: '翻硬币动画的持续时间，单位秒，保留2位小数',
-        step: 0.01,
-        min: 0.01
-    })
-    flipDuration: number = 1.5;
+    @property({ type: Node, displayName: 'DebugConfig节点', tooltip: 'config 节点（挂载 DebugConfig 脚本）' })
+    debugConfigNode: Node | null = null;
+
+    /**
+     * 从 GameManager 获取翻转动画时长（基于 speed 升级项）
+     */
+    private getFlipDuration(): number {
+        const duration = this._gameManager?.getAnimDuration() ?? 1.5;
+        return duration > 0 ? duration : 1.5;
+    }
 
     /**
      * 硬币 Sprite 组件引用（用于切换正/反面贴图）
@@ -310,7 +322,7 @@ export class CoinController extends Component {
 
             const animState = this._coinAnimation.getState(this.FLIP_ANIM_NAME);
             if (animState) {
-                const speed = animState.duration / this.flipDuration;
+                const speed = animState.duration / this.getFlipDuration();
                 animState.speed = speed;
             }
 
@@ -378,8 +390,9 @@ export class CoinController extends Component {
         if (totalKeyframes === 0) return;
 
         const last60Start = Math.max(0, totalKeyframes - 60);
-        const speed = this.flipDuration > 0
-            ? (this._coinAnimation.getState(this.FLIP_ANIM_NAME)?.duration || 1.37) / this.flipDuration
+        const debugDuration = this.getFlipDuration();
+        const speed = debugDuration > 0
+            ? (this._coinAnimation.getState(this.FLIP_ANIM_NAME)?.duration || 1.37) / debugDuration
             : 1;
         const startTime = keyframeTimes[last60Start] / speed;
 
@@ -509,11 +522,13 @@ export class CoinController extends Component {
 
         // 显示暴击特效
         if (result.isCrit) {
-            this.showCriticalEffect();
+            const critBonus = this._gameManager.getUpgradeValue('criticalBonus');
+            this.showCriticalEffect(critBonus);
         }
 
         // 更新连击显示
-        this.updateStreakDisplay(result.streak);
+        const streakBonusValue = result.streak > 0 ? this._gameManager.getUpgradeValue('streakBonus') * result.streak : 0;
+        this.updateStreakDisplay(result.streak, streakBonusValue);
 
         // 更新暴击计数显示
         if (result.isCrit) {
@@ -667,8 +682,9 @@ export class CoinController extends Component {
 
     /**
      * 显示暴击特效
+     * @param critBonus 暴击加成
      */
-    private showCriticalEffect(): void {
+    private showCriticalEffect(critBonus: number): void {
         if (!this.criticalHitNode) return;
 
         // 激活暴击节点
@@ -701,16 +717,21 @@ export class CoinController extends Component {
     /**
      * 更新连击显示
      * @param streak 当前连击数
+     * @param streakBonus 连击加成
      */
-    private updateStreakDisplay(streak: number): void {
+    private updateStreakDisplay(streak: number, streakBonus: number): void {
         this._currentStreakDisplay = streak;
 
         if (!this.streakNode) return;
 
-        // 获取 Label 组件（streak/text001）
-        const label = this.streakNode.getComponentInChildren(Label);
-        if (label) {
-            label.string = `x${streak}`;
+        // 更新 num（连击数）
+        if (this.streakNumLabel) {
+            this.streakNumLabel.string = `x${streak}`;
+        }
+
+        // 更新 bonus（连击加成）
+        if (this.streakBonusLabel) {
+            this.streakBonusLabel.string = `+${this.formatNumber(streakBonus)}`;
         }
 
         // 连击 > 0 时显示，否则隐藏
@@ -731,16 +752,10 @@ export class CoinController extends Component {
     private updateCritCountDisplay(): void {
         this._critCountDisplay++;
 
-        if (!this.criticalNode) return;
-
-        // 获取 Label 组件（critical/text001）
-        const label = this.criticalNode.getComponentInChildren(Label);
-        if (label) {
-            label.string = `x${this._critCountDisplay}`;
-        }
-
         // 暴击计数 > 0 时显示
-        this.criticalNode.active = this._critCountDisplay > 0;
+        if (this.criticalNode) {
+            this.criticalNode.active = this._critCountDisplay > 0;
+        }
     }
 
     /**
@@ -761,7 +776,6 @@ export class CoinController extends Component {
         if (this.criticalNode) this.criticalNode.active = false;
         if (this.pityNode) this.pityNode.active = false;
         if (this.autoingNode) this.autoingNode.active = false;
-        if (this.bonusNode) this.bonusNode.active = false;
     }
 
     /**
