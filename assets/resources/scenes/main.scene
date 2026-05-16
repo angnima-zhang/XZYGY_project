@@ -47918,7 +47918,7 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "value_initialValue": 10,
+    "value_initialValue": 1000000,
     "value_initialPrice": 5,
     "speed_initialValue": 5,
     "speed_initialPrice": 5,

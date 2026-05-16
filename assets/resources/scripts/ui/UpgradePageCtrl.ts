@@ -5,7 +5,7 @@
  * - 管理 UpgradePage 页面的显示/隐藏
  * - 管理页面内的 8 个升级项
  * - 处理返回按钮（回到 MainPage）
- * - 显示当前余额
+ * - 显示当前余额（实时更新）
  * 
  * 场景节点对应：
  * - UpgradePage（挂载此脚本）
@@ -34,7 +34,6 @@
 import { _decorator, Component, Node, Label, Vec3 } from 'cc';
 import { GameManager } from '../core/GameManager';
 
-// 解构装饰器
 const { ccclass, property } = _decorator;
 
 @ccclass('UpgradePageCtrl')
@@ -63,18 +62,26 @@ export class UpgradePageCtrl extends Component {
     private _originalX: number = 720;
 
     /**
+     * 余额变更回调引用（用于 onDestroy 中移除）
+     */
+    private _balanceChangeCallback: (() => void) | null = null;
+
+    /**
      * 组件加载时调用
      */
     onLoad() {
         this._gameManager = GameManager.getInstance();
 
-        // 绑定返回按钮事件
         if (this.backBtnNode) {
             this.backBtnNode.on(Node.EventType.TOUCH_END, this.onBackClick, this);
         }
 
-        // 记录初始 X 位置，不再通过 active 控制显示/隐藏
         this._originalX = this.node.position.x;
+
+        // 注册余额变更回调，购买升级时实时更新余额显示
+        this._balanceChangeCallback = this.refreshUI.bind(this);
+        this._gameManager.onBalanceChange(this._balanceChangeCallback);
+
         console.log('[UpgradePageCtrl] 初始化完成，初始 X:', this._originalX);
     }
 
@@ -84,6 +91,9 @@ export class UpgradePageCtrl extends Component {
     onDestroy() {
         if (this.backBtnNode && this.backBtnNode.isValid) {
             this.backBtnNode.off(Node.EventType.TOUCH_END, this.onBackClick, this);
+        }
+        if (this._gameManager && this._balanceChangeCallback) {
+            this._gameManager.offBalanceChange(this._balanceChangeCallback);
         }
     }
 
@@ -122,7 +132,6 @@ export class UpgradePageCtrl extends Component {
     private refreshUI(): void {
         if (!this._gameManager) return;
 
-        // 更新余额显示
         if (this.balanceLabel) {
             const balance = this._gameManager.getBalance();
             this.balanceLabel.string = `${balance}`;
