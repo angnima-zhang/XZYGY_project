@@ -196,7 +196,7 @@ export class UpgradeItemCtrl extends Component {
 
     private _onEventCallback(): void {
         if (this.node.activeInHierarchy) {
-            this.updateButtonState();
+            this.refreshUI();
         }
     }
 
