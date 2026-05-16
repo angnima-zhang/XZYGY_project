@@ -4286,7 +4286,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "socre",
+    "_name": "score",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -4647,7 +4647,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "text-001",
+    "_name": "num",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -5339,7 +5339,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "text-001",
+    "_name": "num",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {

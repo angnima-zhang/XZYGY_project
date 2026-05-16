@@ -75,18 +75,20 @@ export class MainUI extends Component {
     onLoad() {
         // 获取游戏管理器实例
         this._gameManager = GameManager.getInstance();
+        console.log('[MainUI] onLoad, _gameManager:', !!this._gameManager);
+        console.log('[MainUI] onLoad, balanceLabel:', this.balanceLabel ? '已绑定' : '未绑定');
+        console.log('[MainUI] onLoad, flipCountLabel:', this.flipCountLabel ? '已绑定' : '未绑定');
+        console.log('[MainUI] onLoad, needAmountLabel:', this.needAmountLabel ? '已绑定' : '未绑定');
+        console.log('[MainUI] onLoad, progressBar:', this.progressBar ? '已绑定' : '未绑定');
 
         // 注册翻转事件回调
         this._gameManager.onFlip(this.onFlipResult.bind(this));
-
+        console.log('[MainUI] 翻转事件回调已注册');
         console.log('[MainUI] 初始化完成');
     }
 
-    /**
-     * 组件启用时调用
-     * 刷新所有 UI 显示
-     */
     onEnable() {
+        console.log('[MainUI] onEnable 被调用');
         this.refreshAllUI();
     }
 
@@ -106,25 +108,32 @@ export class MainUI extends Component {
      * 处理余额动画过渡
      */
     update(dt: number): void {
-        // 余额平滑过渡
-        if (Math.abs(this._displayedBalance - this._targetBalance) > 0.5) {
-            // 使用线性插值实现平滑过渡
-            const speed = 5; // 过渡速度
-            this._displayedBalance += (this._targetBalance - this._displayedBalance) * speed * dt;
-
-            // 更新余额显示
-            if (this.balanceLabel) {
-                this.balanceLabel.string = this.formatNumber(Math.floor(this._displayedBalance));
+        const diff = this._targetBalance - this._displayedBalance;
+        if (Math.abs(diff) < 0.01) {
+            // 接近目标值，直接对齐并写入最终结果
+            if (Math.abs(diff) > 0.0001) {
+                this._displayedBalance = this._targetBalance;
+                if (this.balanceLabel) {
+                    this.balanceLabel.string = this.formatNumber(Math.floor(this._displayedBalance));
+                }
             }
+            return;
+        }
+
+        const speed = 5;
+        this._displayedBalance += diff * speed * dt;
+
+        if (this.balanceLabel) {
+            this.balanceLabel.string = this.formatNumber(Math.floor(this._displayedBalance));
         }
     }
 
-    /**
-     * 处理翻转结果（由 GameManager 回调触发）
-     * @param result 翻转结果
-     */
     private onFlipResult(result: FlipResult): void {
-        if (!result) return;
+        console.log('[MainUI] onFlipResult 被调用, result:', result ? `isHead=${result.isHead}, score=${result.score}, streak=${result.streak}` : 'result为空');
+        if (!result) {
+            console.warn('[MainUI] onFlipResult 失败: result 为空');
+            return;
+        }
 
         // 更新抛币次数
         this.updateFlipCount();
@@ -134,21 +143,29 @@ export class MainUI extends Component {
 
         // 更新进度条
         this.updateProgressBar();
+
+        // 更新还需金额
+        this.updateNeedAmount();
+        console.log('[MainUI] onFlipResult 处理完成');
     }
 
-    /**
-     * 刷新所有 UI 显示
-     * 在场景加载或弹窗打开时调用
-     */
     private refreshAllUI(): void {
-        if (!this._gameManager) return;
+        console.log('[MainUI] refreshAllUI 被调用');
+        if (!this._gameManager) {
+            console.warn('[MainUI] refreshAllUI 失败: _gameManager 为空');
+            return;
+        }
 
         // 更新余额
         this._targetBalance = this._gameManager.getBalance();
         this._displayedBalance = this._targetBalance;
+        console.log('[MainUI] refreshAllUI, targetBalance:', this._targetBalance, ', displayedBalance:', this._displayedBalance);
 
         if (this.balanceLabel) {
             this.balanceLabel.string = this.formatNumber(Math.floor(this._displayedBalance));
+            console.log('[MainUI] refreshAllUI, balanceLabel 设置为:', this.balanceLabel.string);
+        } else {
+            console.warn('[MainUI] refreshAllUI, balanceLabel 未绑定');
         }
 
         // 更新抛币次数
@@ -159,60 +176,70 @@ export class MainUI extends Component {
 
         // 更新还需金额
         this.updateNeedAmount();
+        console.log('[MainUI] refreshAllUI 完成');
     }
 
-    /**
-     * 更新余额显示
-     */
     private updateBalance(): void {
-        if (!this._gameManager) return;
+        if (!this._gameManager) {
+            console.warn('[MainUI] updateBalance 失败: _gameManager 为空');
+            return;
+        }
 
-        // 设置目标余额，由 update 函数处理动画过渡
+        const prevTarget = this._targetBalance;
         this._targetBalance = this._gameManager.getBalance();
+        console.log(`[MainUI] updateBalance, prevTarget=${prevTarget} -> newTarget=${this._targetBalance}`);
     }
 
-    /**
-     * 更新抛币次数显示
-     */
     private updateFlipCount(): void {
-        if (!this._gameManager || !this.flipCountLabel) return;
+        if (!this._gameManager) {
+            console.warn('[MainUI] updateFlipCount 失败: _gameManager 为空');
+            return;
+        }
+        if (!this.flipCountLabel) {
+            console.warn('[MainUI] updateFlipCount 失败: flipCountLabel 未绑定');
+            return;
+        }
 
         const flipCount = this._gameManager.getPlayerData().getStats().totalFlips;
+        console.log(`[MainUI] updateFlipCount, 总翻转次数=${flipCount}, flipCountLabel当前值=${this.flipCountLabel.string}`);
         this.flipCountLabel.string = `${flipCount}`;
+        console.log(`[MainUI] updateFlipCount, flipCountLabel更新为=${this.flipCountLabel.string}`);
     }
 
-    /**
-     * 更新进度条显示
-     * 进度 = 当前余额 / 1亿
-     */
     private updateProgressBar(): void {
-        if (!this._gameManager || !this.progressBar) return;
+        if (!this._gameManager) {
+            console.warn('[MainUI] updateProgressBar 失败: _gameManager 为空');
+            return;
+        }
+        if (!this.progressBar) {
+            console.warn('[MainUI] updateProgressBar 失败: progressBar 未绑定');
+            return;
+        }
 
         const balance = this._gameManager.getBalance();
         const targetBalance = this._gameManager.getPlayerData().TARGET_BALANCE;
-
-        // 计算进度（0~1之间）
         const progress = Math.min(1, balance / targetBalance);
-
-        // 更新进度条
+        console.log(`[MainUI] updateProgressBar, balance=${balance}, target=${targetBalance}, progress=${progress}`);
         this.progressBar.progress = progress;
+        console.log(`[MainUI] updateProgressBar, progressBar.progress 更新为=${this.progressBar.progress}`);
     }
 
-    /**
-     * 更新还需金额显示
-     * 显示还需要多少钱才能达到1亿目标
-     */
     private updateNeedAmount(): void {
-        if (!this._gameManager || !this.needAmountLabel) return;
+        if (!this._gameManager) {
+            console.warn('[MainUI] updateNeedAmount 失败: _gameManager 为空');
+            return;
+        }
+        if (!this.needAmountLabel) {
+            console.warn('[MainUI] updateNeedAmount 失败: needAmountLabel 未绑定');
+            return;
+        }
 
         const balance = this._gameManager.getBalance();
         const targetBalance = this._gameManager.getPlayerData().TARGET_BALANCE;
-
-        // 计算还需金额
         const needAmount = Math.max(0, targetBalance - balance);
-
-        // 更新显示
+        const oldText = this.needAmountLabel.string;
         this.needAmountLabel.string = this.formatNumber(Math.ceil(needAmount));
+        console.log(`[MainUI] updateNeedAmount, balance=${balance}, target=${targetBalance}, needAmount=${needAmount}, oldText=${oldText} -> newText=${this.needAmountLabel.string}`);
     }
 
     /**
