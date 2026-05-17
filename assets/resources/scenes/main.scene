@@ -2638,7 +2638,7 @@
         "__id__": 71
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 76
@@ -3072,7 +3072,7 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "playOnLoad": false,
+    "playOnLoad": true,
     "_clips": [
       {
         "__uuid__": "24315479-8fe8-41f0-a9ee-2ba0bdbefe2c",
@@ -3099,7 +3099,7 @@
       "__id__": 74
     },
     "defaultDuration": 0,
-    "loop": false,
+    "loop": true,
     "_id": "1c9e8PW3xBZq4GYvjjdmQn"
   },
   {
@@ -3683,7 +3683,7 @@
     "pity_initialPrice": 5,
     "streakBonus_initialValue": 0,
     "streakBonus_initialPrice": 5,
-    "time_initialValue": 61,
+    "time_initialValue": 5,
     "time_initialPrice": 5,
     "global_growthFactor": 1.2,
     "flipDuration": 1.5,

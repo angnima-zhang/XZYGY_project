@@ -93,13 +93,14 @@ export class VfxController extends Component {
      * 开始循环播放（如果已在循环中则不重启动画）
      */
     playLooping(): void {
+        console.log(`[VfxController] playLooping 被调用, node=${this.node?.name}, animation=${!!this.animation}`);
         if (!this.animation) {
             console.warn('[VfxController] playLooping 失败: animation 为空');
             return;
         }
 
-        // 如果已经在循环播放，不重启动画
         if (this._isLooping) {
+            console.log('[VfxController] playLooping: 已在循环中，跳过重启');
             return;
         }
 
@@ -108,15 +109,28 @@ export class VfxController extends Component {
             this._hideTimer = null;
         }
 
-        this.node.active = true;
-        this._isPlaying = true;
-        this._isLooping = true;
+        const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
+        console.log(`[VfxController] playLooping: clipName='${clipName}'`);
 
-        if (this.animation.clips.length > 0) {
-            this.animation.clips[0].wrapMode = 2;
+        if (clipName) {
+            // 停止当前播放并重置状态
+            this.animation.stop();
+
+            // 设置循环模式
+            if (this.animation.clips.length > 0) {
+                this.animation.clips[0].wrapMode = 2;
+            }
+
+            this.node.active = true;
+            this._isPlaying = true;
+            this._isLooping = true;
+
+            // 播放指定动画
+            this.animation.play(clipName);
+            console.log('[VfxController] playLooping: animation.play() 已调用');
+        } else {
+            console.warn('[VfxController] playLooping: 无可用动画');
         }
-
-        this.animation.play();
     }
 
     /**

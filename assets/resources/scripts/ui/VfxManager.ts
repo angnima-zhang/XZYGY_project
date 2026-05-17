@@ -200,6 +200,19 @@ export class VfxManager extends Component {
         let totalCount = 0;
         this._controllers.forEach(arr => totalCount += arr.length);
         console.log(`[VfxManager] 初始化完成，共注册 ${totalCount} 个 VFX 控制器`);
+
+        // 打印 autoing 详细信息
+        if (this.autoingVfx) {
+            console.log(`[VfxManager] autoingVfx 节点 active=${this.autoingVfx.active}, 子节点数=${this.autoingVfx.children.length}`);
+            const ctrl = this.autoingVfx.getComponent(VfxController);
+            if (ctrl) {
+                console.log(`[VfxManager] autoingVfx VfxController animation=${!!ctrl.animation}, clips=${ctrl.animation?.clips.length ?? 0}`);
+            } else {
+                console.warn('[VfxManager] autoingVfx 节点未挂载 VfxController!');
+            }
+        } else {
+            console.error('[VfxManager] autoingVfx 节点未配置!');
+        }
     }
 
     /**
@@ -263,7 +276,9 @@ export class VfxManager extends Component {
      */
     private playLoopingVfx(name: string): void {
         const controllers = this.getControllers(name);
+        console.log(`[VfxManager] playLoopingVfx('${name}'), controllers=${controllers.length}`);
         for (const ctrl of controllers) {
+            console.log(`[VfxManager] 调用 VfxController.playLooping(), node=${ctrl.node?.name}`);
             ctrl.playLooping();
         }
     }
@@ -274,6 +289,7 @@ export class VfxManager extends Component {
      */
     private stopLoopingVfx(name: string): void {
         const controllers = this.getControllers(name);
+        console.log(`[VfxManager] stopLoopingVfx('${name}'), controllers=${controllers.length}`);
         for (const ctrl of controllers) {
             ctrl.stopLooping();
         }
@@ -356,7 +372,8 @@ export class VfxManager extends Component {
      * 触发时机：开始自动翻转时
      */
     playAutoing(): void {
-        this.playVfx('autoing', 0);
+        console.log('[VfxManager] playAutoing 被调用');
+        this.playLoopingVfx('autoing');
         this.playAudioClip(this.autoStartClip);
     }
 
@@ -365,7 +382,8 @@ export class VfxManager extends Component {
      * 触发时机：停止自动翻转时
      */
     stopAutoing(): void {
-        this.stopVfx('autoing');
+        console.log('[VfxManager] stopAutoing 被调用');
+        this.stopLoopingVfx('autoing');
         this.playAudioClip(this.autoStopClip);
     }
 

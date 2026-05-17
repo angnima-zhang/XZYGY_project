@@ -701,10 +701,12 @@ export class GameManager {
         console.log(`[GameManager] 开始自动翻转，持续 ${duration} 秒`);
 
         // 通知 UI
+        console.log(`[GameManager] notifyAutoFlipStart 回调数: ${this._autoFlipStartCallbacks.length}`);
         this.notifyAutoFlipStart(duration);
 
         // 使用 setInterval 按照动画速度定时翻转
         const intervalMs = this.getAnimDuration() * 1000;
+        console.log(`[GameManager] 自动翻转间隔: ${intervalMs}ms`);
         
         this._autoFlipTimer = window.setInterval(() => {
             if (!this._isAutoFlipping) {
@@ -712,8 +714,11 @@ export class GameManager {
                 return;
             }
 
-            this._autoFlipAccumulatedTime += this.getAnimDuration();
+            // 先准备结果，再执行翻转
+            this.prepareFlip();
             this.flipCoin();
+
+            this._autoFlipAccumulatedTime += this.getAnimDuration();
 
             // 通知剩余时间
             const remaining = Math.max(0, duration - this._autoFlipAccumulatedTime);
@@ -726,6 +731,7 @@ export class GameManager {
         }, intervalMs);
 
         // 立即执行第一次翻转
+        this.prepareFlip();
         this.flipCoin();
     }
 
