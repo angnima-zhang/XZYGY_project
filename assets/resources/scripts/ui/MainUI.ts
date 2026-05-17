@@ -141,7 +141,7 @@ export class MainUI extends Component {
             return;
         }
 
-        const speed = 5;
+        const speed = 20;
         this._displayedBalance += diff * speed * dt;
 
         if (this.balanceLabel) {
