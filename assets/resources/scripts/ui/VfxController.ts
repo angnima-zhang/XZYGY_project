@@ -93,7 +93,7 @@ export class VfxController extends Component {
      * 开始循环播放（如果已在循环中则不重启动画）
      */
     playLooping(): void {
-        console.log(`[VfxController] playLooping 被调用, node=${this.node?.name}, animation=${!!this.animation}`);
+        console.log(`[VfxController] playLooping 被调用, node=${this.node?.name}, animation=${!!this.animation}, activeInHierarchy=${this.node?.activeInHierarchy}`);
         if (!this.animation) {
             console.warn('[VfxController] playLooping 失败: animation 为空');
             return;
@@ -112,25 +112,35 @@ export class VfxController extends Component {
         const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
         console.log(`[VfxController] playLooping: clipName='${clipName}'`);
 
-        if (clipName) {
-            // 停止当前播放并重置状态
-            this.animation.stop();
+        if (!clipName) {
+            console.warn('[VfxController] playLooping: 无可用动画');
+            return;
+        }
+
+        this._isLooping = true;
+
+        // 先激活节点
+        this.node.active = true;
+        this._isPlaying = true;
+
+        // 延迟到下一帧再播放，确保 Animation 组件状态已初始化
+        this.scheduleOnce(() => {
+            if (!this.animation || !this._isLooping) return;
 
             // 设置循环模式
-            if (this.animation.clips.length > 0) {
-                this.animation.clips[0].wrapMode = 2;
+            for (const clip of this.animation.clips) {
+                clip.wrapMode = 2;
             }
 
-            this.node.active = true;
-            this._isPlaying = true;
-            this._isLooping = true;
+            const state = this.animation.getState(clipName);
+            if (state) {
+                state.wrapMode = 2;
+                state.time = 0;
+            }
 
-            // 播放指定动画
             this.animation.play(clipName);
             console.log('[VfxController] playLooping: animation.play() 已调用');
-        } else {
-            console.warn('[VfxController] playLooping: 无可用动画');
-        }
+        }, 0);
     }
 
     /**
