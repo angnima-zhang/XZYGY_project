@@ -93,7 +93,7 @@ export class VfxController extends Component {
      * 开始循环播放（如果已在循环中则不重启动画）
      */
     playLooping(): void {
-        console.log(`[VfxController] playLooping 被调用, node=${this.node?.name}, animation=${!!this.animation}, activeInHierarchy=${this.node?.activeInHierarchy}`);
+        console.log(`[VfxController] playLooping 被调用, node=${this.node?.name}, animation=${!!this.animation}`);
         if (!this.animation) {
             console.warn('[VfxController] playLooping 失败: animation 为空');
             return;
@@ -117,30 +117,29 @@ export class VfxController extends Component {
             return;
         }
 
-        this._isLooping = true;
+        // 先停止已有动画并重置状态
+        this.animation.stop();
 
-        // 先激活节点
+        // 设置循环模式到 clip
+        for (const clip of this.animation.clips) {
+            clip.wrapMode = 2;
+        }
+
+        // 先激活节点，然后立即播放
         this.node.active = true;
         this._isPlaying = true;
+        this._isLooping = true;
 
-        // 延迟到下一帧再播放，确保 Animation 组件状态已初始化
-        this.scheduleOnce(() => {
-            if (!this.animation || !this._isLooping) return;
+        // 获取或创建动画状态
+        let state = this.animation.getState(clipName);
+        if (!state) {
+            state = this.animation.createState(this.animation.defaultClip ?? this.animation.clips[0], clipName);
+        }
+        state.wrapMode = 2;
+        state.time = 0;
 
-            // 设置循环模式
-            for (const clip of this.animation.clips) {
-                clip.wrapMode = 2;
-            }
-
-            const state = this.animation.getState(clipName);
-            if (state) {
-                state.wrapMode = 2;
-                state.time = 0;
-            }
-
-            this.animation.play(clipName);
-            console.log('[VfxController] playLooping: animation.play() 已调用');
-        }, 0);
+        this.animation.play(clipName);
+        console.log('[VfxController] playLooping: animation.play() 已调用');
     }
 
     /**

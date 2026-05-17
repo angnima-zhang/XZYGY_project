@@ -368,6 +368,14 @@ export class VfxManager extends Component {
     }
 
     /**
+     * 播放 UpgradeSection auto VFX（一次）
+     * 触发时机：购买自动翻转时
+     */
+    playAutoMainPage(): void {
+        this.playVfx('autoMainPage', 0.8);
+    }
+
+    /**
      * 播放自动翻转特效 + 音效
      * 触发时机：开始自动翻转时
      */

@@ -704,6 +704,9 @@ export class GameManager {
         // 触发自动开始 VFX + 音效
         this._vfxManager?.playAutoing();
 
+        // 播放 UpgradeSection auto VFX（一次）
+        this._vfxManager?.playAutoMainPage();
+
         const duration = this.getAutoDuration();
         console.log(`[GameManager] 开始自动翻转，持续 ${duration} 秒`);
 
