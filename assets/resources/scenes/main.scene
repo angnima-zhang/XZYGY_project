@@ -3686,7 +3686,7 @@
     "pity_initialPrice": 5,
     "streakBonus_initialValue": 1,
     "streakBonus_initialPrice": 5,
-    "time_initialValue": 1,
+    "time_initialValue": 5,
     "time_initialPrice": 5,
     "global_growthFactor": 1.2,
     "flipDuration": 1.5,
