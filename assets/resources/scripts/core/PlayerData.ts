@@ -122,6 +122,18 @@ export class PlayerData {
     /** 每日重置时间（凌晨4点） */
     private readonly RESET_HOUR = 4;
 
+    /** 升级项最小值限制 */
+    static readonly UPGRADE_MIN_VALUE: Record<UpgradeType, number> = {
+        value: 0,
+        speed: 0.10,
+        lucky: 0,
+        critical: 0,
+        criticalBonus: 0,
+        pity: 0,
+        streakBonus: 0,
+        time: 0
+    };
+
     /** 8种升级项的固定配置（不会随游戏进度变化） */
     private UPGRADE_CONFIGS: Record<UpgradeType, UpgradeConfig> = {
         value: {
@@ -308,12 +320,14 @@ export class PlayerData {
     calculateNextValue(type: UpgradeType): number {
         const config = this.UPGRADE_CONFIGS[type];
         const currentValue = this.getUpgradeValue(type);
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
 
         switch (config.growthType) {
             case 'multiply':
                 return Math.ceil(currentValue * config.growthFactor);
             case 'divide':
-                return Math.floor(currentValue / config.growthFactor);
+                const nextValue = Math.floor(currentValue / config.growthFactor * 100) / 100;
+                return Math.max(minValue, nextValue);
             case 'fixed':
                 return currentValue - 1;
             default:
@@ -346,6 +360,16 @@ export class PlayerData {
 
         // 计算新数值和新价格
         const newValue = this.calculateNextValue(type);
+        const currentValue = this.getUpgradeValue(type);
+
+        // 检查是否达到最小值限制（speed 最小 0.10）
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
+        if (minValue > 0 && newValue <= minValue && currentValue <= minValue) {
+            // 已达最小值，恢复余额
+            this.addBalance(price);
+            return false;
+        }
+
         const newPrice = this.calculateNextPrice(type);
         const currentLevel = this.getUpgradeLevel(type);
 

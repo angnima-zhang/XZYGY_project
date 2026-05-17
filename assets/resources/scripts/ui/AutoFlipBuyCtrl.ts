@@ -20,6 +20,7 @@
 import { _decorator, Component, Node, Label, Button, Sprite, Color } from 'cc';
 import { GameManager } from '../core/GameManager';
 import { NumberFormatter } from '../utils/NumberFormatter';
+import { PlayerData } from '../core/PlayerData';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -224,17 +225,19 @@ export class AutoFlipBuyCtrl extends Component {
         const balance = this._gameManager.getBalance();
         const canAfford = balance >= price;
         const isAutoFlipping = this._gameManager.isAutoFlipping();
+        const isAtLimit = this._isUpgradeAtLimit();
+        const canBuy = canAfford && !isAutoFlipping && !isAtLimit;
 
         if (this.buyButtonNode) {
             const button = this.buyButtonNode.getComponent(Button);
             const sprite = this.buyButtonNode.getComponent(Sprite);
 
             if (button) {
-                button.interactable = canAfford && !isAutoFlipping;
+                button.interactable = canBuy;
             }
 
             if (sprite) {
-                if (canAfford && !isAutoFlipping) {
+                if (canBuy) {
                     if (this._buyButtonOriginalColor) {
                         sprite.color = this._buyButtonOriginalColor;
                     }
@@ -247,8 +250,14 @@ export class AutoFlipBuyCtrl extends Component {
         if (this.adButtonNode) {
             const adButton = this.adButtonNode.getComponent(Button);
             if (adButton) {
-                adButton.interactable = true;
+                adButton.interactable = !isAtLimit && !isAutoFlipping;
             }
         }
+    }
+
+    private _isUpgradeAtLimit(): boolean {
+        const currentValue = this._gameManager.getUpgradeValue('time');
+        const minValue = PlayerData.UPGRADE_MIN_VALUE['time'];
+        return minValue > 0 && currentValue <= minValue;
     }
 }

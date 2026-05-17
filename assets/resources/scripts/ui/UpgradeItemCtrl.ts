@@ -32,6 +32,7 @@
 import { _decorator, Component, Node, Label, Button, Sprite, Color, Enum } from 'cc';
 import { GameManager } from '../core/GameManager';
 import { UpgradeType } from '../core/PlayerData';
+import { PlayerData } from '../core/PlayerData';
 import { NumberFormatter } from '../utils/NumberFormatter';
 
 // 解构装饰器
@@ -320,17 +321,19 @@ export class UpgradeItemCtrl extends Component {
         const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType);
         const balance = this._gameManager.getBalance();
         const canAfford = balance >= currentPrice;
+        const isAtLimit = this._isUpgradeAtLimit();
+        const canBuy = canAfford && !isAtLimit;
 
         if (this.upgradeButtonNode) {
             const button = this.upgradeButtonNode.getComponent(Button);
             const sprite = this.upgradeButtonNode.getComponent(Sprite);
 
             if (button) {
-                button.interactable = canAfford;
+                button.interactable = canBuy;
             }
 
             if (sprite) {
-                if (canAfford) {
+                if (canBuy) {
                     if (this._upgradeButtonOriginalColor) {
                         sprite.color = this._upgradeButtonOriginalColor;
                     }
@@ -343,8 +346,14 @@ export class UpgradeItemCtrl extends Component {
         if (this.adButtonNode) {
             const adButton = this.adButtonNode.getComponent(Button);
             if (adButton) {
-                adButton.interactable = true;
+                adButton.interactable = !isAtLimit;
             }
         }
+    }
+
+    private _isUpgradeAtLimit(): boolean {
+        const currentValue = this._gameManager.getUpgradeValue(this.upgradeType);
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[this.upgradeType];
+        return minValue > 0 && currentValue <= minValue;
     }
 }
