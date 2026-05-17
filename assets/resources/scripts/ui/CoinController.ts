@@ -54,6 +54,12 @@ export class CoinController extends Component {
     @property({ type: Node, displayName: '暴击特效节点', tooltip: 'criticalHit 节点' })
     criticalHitNode: Node | null = null;
 
+    /**
+     * 暴击 bonus Label 节点
+     */
+    @property({ type: Label, displayName: '暴击bonus', tooltip: 'criticalHit/bonus 节点的 Label 组件' })
+    criticalHitBonusLabel: Label | null = null;
+
 
 
     /**
@@ -734,10 +740,12 @@ export class CoinController extends Component {
     private showCriticalEffect(critBonus: number): void {
         if (!this.criticalHitNode) return;
 
-        // 激活暴击节点
         this.criticalHitNode.active = true;
 
-        // 获取 UIOpacity 组件
+        if (this.criticalHitBonusLabel) {
+            this.criticalHitBonusLabel.string = `+${this.formatNumber(critBonus)}`;
+        }
+
         let opacity = this.criticalHitNode.getComponent(UIOpacity);
         if (!opacity) {
             opacity = this.criticalHitNode.addComponent(UIOpacity);

@@ -129,6 +129,18 @@ export class PlayerData {
         lucky: 0,
         critical: 0,
         criticalBonus: 0,
+        pity: 1,
+        streakBonus: 0,
+        time: 0
+    };
+
+    /** 升级项最大值限制 */
+    static readonly UPGRADE_MAX_VALUE: Record<UpgradeType, number> = {
+        value: 0,
+        speed: 0,
+        lucky: 100,
+        critical: 100,
+        criticalBonus: 0,
         pity: 0,
         streakBonus: 0,
         time: 0
@@ -321,18 +333,32 @@ export class PlayerData {
         const config = this.UPGRADE_CONFIGS[type];
         const currentValue = this.getUpgradeValue(type);
         const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE[type];
 
+        let nextValue: number;
         switch (config.growthType) {
             case 'multiply':
-                return Math.ceil(currentValue * config.growthFactor);
+                nextValue = Math.ceil(currentValue * config.growthFactor);
+                break;
             case 'divide':
-                const nextValue = Math.floor(currentValue / config.growthFactor * 100) / 100;
-                return Math.max(minValue, nextValue);
+                nextValue = Math.floor(currentValue / config.growthFactor * 100) / 100;
+                break;
             case 'fixed':
-                return currentValue - 1;
+                nextValue = currentValue - 1;
+                break;
             default:
-                return currentValue;
+                nextValue = currentValue;
         }
+
+        // 限制在上下限范围内
+        if (minValue > 0) {
+            nextValue = Math.max(minValue, nextValue);
+        }
+        if (maxValue > 0) {
+            nextValue = Math.min(maxValue, nextValue);
+        }
+
+        return nextValue;
     }
 
     /**
@@ -352,24 +378,28 @@ export class PlayerData {
      */
     doUpgrade(type: UpgradeType): boolean {
         const price = this.getUpgradePrice(type);
+        const currentValue = this.getUpgradeValue(type);
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE[type];
+
+        // 检查是否已达上限/下限
+        if (minValue > 0 && currentValue <= minValue) {
+            console.log(`[PlayerData] ${type} 已达最小值限制: ${currentValue} <= ${minValue}`);
+            return false;
+        }
+        if (maxValue > 0 && currentValue >= maxValue) {
+            console.log(`[PlayerData] ${type} 已达最大值限制: ${currentValue} >= ${maxValue}`);
+            return false;
+        }
         
         // 检查余额是否足够
         if (!this.subtractBalance(price)) {
+            this.addBalance(price);
             return false;
         }
 
         // 计算新数值和新价格
         const newValue = this.calculateNextValue(type);
-        const currentValue = this.getUpgradeValue(type);
-
-        // 检查是否达到最小值限制（speed 最小 0.10）
-        const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
-        if (minValue > 0 && newValue <= minValue && currentValue <= minValue) {
-            // 已达最小值，恢复余额
-            this.addBalance(price);
-            return false;
-        }
-
         const newPrice = this.calculateNextPrice(type);
         const currentLevel = this.getUpgradeLevel(type);
 

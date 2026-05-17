@@ -660,6 +660,9 @@
     "criticalHitNode": {
       "__id__": 16
     },
+    "criticalHitBonusLabel": {
+      "__id__": 30
+    },
     "criticalNode": {
       "__id__": 18
     },
@@ -730,8 +733,8 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 5,
-      "y": 5,
+      "x": 1,
+      "y": 1,
       "z": 1
     },
     "_mobility": 0,
@@ -1540,8 +1543,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 95,
-      "height": 95
+      "width": 500,
+      "height": 500
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1601,8 +1604,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
-      "height": 100
+      "width": 500,
+      "height": 500
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -3677,11 +3680,11 @@
     "lucky_initialPrice": 5,
     "critical_initialValue": 100,
     "critical_initialPrice": 5,
-    "criticalBonus_initialValue": 0,
+    "criticalBonus_initialValue": 1,
     "criticalBonus_initialPrice": 5,
     "pity_initialValue": 2,
     "pity_initialPrice": 5,
-    "streakBonus_initialValue": 0,
+    "streakBonus_initialValue": 1,
     "streakBonus_initialPrice": 5,
     "time_initialValue": 1,
     "time_initialPrice": 5,
@@ -12609,8 +12612,8 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 5,
-      "y": 5,
+      "x": 1,
+      "y": 1,
       "z": 1
     },
     "_mobility": 0,
@@ -12683,8 +12686,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 80,
-      "height": 75
+      "width": 500,
+      "height": 500
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -12719,7 +12722,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -12744,8 +12747,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
-      "height": 100
+      "width": 500,
+      "height": 500
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",

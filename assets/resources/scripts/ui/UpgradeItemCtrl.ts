@@ -341,6 +341,13 @@ export class UpgradeItemCtrl extends Component {
                     sprite.color = this.GRAY_COLOR;
                 }
             }
+
+            if (isAtLimit) {
+                const btnLabel = this.upgradeButtonNode.getComponentInChildren(Label);
+                if (btnLabel) {
+                    btnLabel.string = '已满级';
+                }
+            }
         }
 
         if (this.adButtonNode) {
@@ -348,12 +355,20 @@ export class UpgradeItemCtrl extends Component {
             if (adButton) {
                 adButton.interactable = !isAtLimit;
             }
+
+            if (isAtLimit) {
+                const adLabel = this.adButtonNode.getComponentInChildren(Label);
+                if (adLabel) {
+                    adLabel.string = '已满级';
+                }
+            }
         }
     }
 
     private _isUpgradeAtLimit(): boolean {
         const currentValue = this._gameManager.getUpgradeValue(this.upgradeType);
         const minValue = PlayerData.UPGRADE_MIN_VALUE[this.upgradeType];
-        return minValue > 0 && currentValue <= minValue;
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE[this.upgradeType];
+        return (minValue > 0 && currentValue <= minValue) || (maxValue > 0 && currentValue >= maxValue);
     }
 }
