@@ -28,117 +28,149 @@
 
 import { _decorator, Component, Animation } from 'cc';
 
-// 解构装饰器
 const { ccclass, property } = _decorator;
 
-/**
- * VFX 控制器类
- */
 @ccclass('VfxController')
 export class VfxController extends Component {
 
-    /**
-     * Animation 组件引用
-     * 用于播放帧动画
-     */
     @property({ type: Animation, displayName: '动画组件', tooltip: 'vfx 节点上的 Animation 组件' })
     animation: Animation | null = null;
 
-    /**
-     * 默认播放时长（秒）
-     * 0 表示播放完整动画剪辑
-     */
     @property({ displayName: '默认时长(秒)', tooltip: '0=播放完整动画，>0=指定时长后自动隐藏' })
     defaultDuration: number = 0;
 
-    /**
-     * 是否循环播放
-     * 用于 autoing 等需要持续显示的特效
-     */
     @property({ displayName: '循环播放', tooltip: '是否循环播放动画' })
     loop: boolean = false;
 
-    /**
-     * 是否正在播放中
-     */
     private _isPlaying: boolean = false;
 
-    /**
-     * 定时器 ID（用于定时隐藏）
-     */
+    private _isLooping: boolean = false;
+
     private _hideTimer: number | null = null;
 
     /**
-     * 组件加载时调用
-     * 初始化 Animation 组件
-     */
-    onLoad() {
-        if (!this.animation) {
-            this.animation = this.node.getComponent(Animation);
-        }
-
-        if (this.animation && this.animation.defaultClip) {
-            console.log(`[VfxController] 初始化完成，动画: ${this.animation.defaultClip.name}`);
-        } else {
-            console.warn('[VfxController] 未找到 Animation 组件或默认动画剪辑');
-        }
-
-        // 初始隐藏
-        this.node.active = false;
-    }
-
-    /**
-     * 组件销毁时调用
-     * 清理定时器
-     */
-    onDestroy() {
-        if (this._hideTimer !== null) {
-            clearTimeout(this._hideTimer);
-            this._hideTimer = null;
-        }
-    }
-
-    /**
-     * 播放 VFX 特效（单次）
-     * @param duration 持续时长（秒），0 表示使用默认时长
+     * 开始播放（非循环模式）
      */
     play(duration: number = 0): void {
-        if (!this.animation) return;
+        if (!this.animation) {
+            console.warn('[VfxController] play 失败: animation 为空');
+            return;
+        }
 
-        // 清除之前的定时器
         if (this._hideTimer !== null) {
             clearTimeout(this._hideTimer);
             this._hideTimer = null;
         }
 
-        // 激活节点
         this.node.active = true;
         this._isPlaying = true;
+        this._isLooping = false;
 
-        // 设置循环模式
-        this.animation.wrapMode = this.loop ? Animation.WrapMode.Loop : Animation.WrapMode.Normal;
+        if (this.animation.clips.length > 0) {
+            this.animation.clips[0].wrapMode = 0;
+        } else {
+            console.warn('[VfxController] play: animation.clips 为空，跳过 wrapMode 设置');
+        }
 
-        // 播放动画
-        this.animation.play();
-
-        // 如果不是循环播放，且指定了时长，则定时隐藏
-        if (!this.loop) {
-            const hideTime = duration > 0 ? duration : this.defaultDuration;
-            
-            if (hideTime > 0) {
-                // 指定时长后隐藏
-                this._hideTimer = window.setTimeout(() => {
-                    this.stop();
-                }, hideTime * 1000);
-            } else {
-                // 监听动画播放结束事件
-                const onFinished = () => {
-                    this.stop();
-                    this.animation?.node.off(Animation.EventType.FINISHED, onFinished);
-                };
-                this.animation.node.on(Animation.EventType.FINISHED, onFinished);
+        // 停止已有播放并重置时间，确保每次都能从头开始播放
+        this.animation.stop();
+        const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
+        if (clipName) {
+            let state = this.animation.getState(clipName);
+            if (state) {
+                state.time = 0;
             }
         }
+        this.animation.play();
+
+        const hideTime = duration > 0 ? duration : this.defaultDuration;
+
+        if (hideTime > 0) {
+            this._hideTimer = window.setTimeout(() => {
+                this.stop();
+            }, hideTime * 1000);
+        } else {
+            const onFinished = () => {
+                this.stop();
+                this.animation?.node.off(Animation.EventType.FINISHED, onFinished);
+            };
+            this.animation.node.on(Animation.EventType.FINISHED, onFinished);
+        }
+    }
+
+    /**
+     * 开始循环播放（如果已在循环中则不重启动画）
+     */
+    playLooping(): void {
+        console.log(`[VfxController] playLooping 被调用, node=${this.node?.name}, animation=${!!this.animation}`);
+        if (!this.animation) {
+            console.warn('[VfxController] playLooping 失败: animation 为空');
+            return;
+        }
+
+        if (this._isLooping) {
+            console.log('[VfxController] playLooping: 已在循环中，跳过重启');
+            return;
+        }
+
+        if (this._hideTimer !== null) {
+            clearTimeout(this._hideTimer);
+            this._hideTimer = null;
+        }
+
+        const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
+        console.log(`[VfxController] playLooping: clipName='${clipName}'`);
+
+        if (!clipName) {
+            console.warn('[VfxController] playLooping: 无可用动画');
+            return;
+        }
+
+        // 先激活节点
+        this.node.active = true;
+        this._isPlaying = true;
+        this._isLooping = true;
+
+        // 设置循环模式到 clip
+        for (const clip of this.animation.clips) {
+            clip.wrapMode = 2;
+        }
+
+        // 延迟一帧播放，确保节点激活后 Animation 组件完成初始化
+        this.scheduleOnce(() => {
+            if (!this.animation || !this._isLooping) return;
+
+            // 停止已有动画并重置状态
+            this.animation.stop();
+
+            // 获取或创建动画状态
+            let state = this.animation.getState(clipName);
+            if (!state) {
+                state = this.animation.createState(this.animation.defaultClip ?? this.animation.clips[0], clipName);
+            }
+            state.wrapMode = 2;
+            state.time = 0;
+
+            this.animation.play(clipName);
+            console.log('[VfxController] playLooping: animation.play() 已调用');
+        }, 0);
+    }
+
+    /**
+     * 停止循环播放（不停止动画，只是标记为非循环）
+     */
+    stopLooping(): void {
+        if (!this.animation) return;
+
+        if (this._hideTimer !== null) {
+            clearTimeout(this._hideTimer);
+            this._hideTimer = null;
+        }
+
+        this.animation.stop();
+        this.node.active = false;
+        this._isPlaying = false;
+        this._isLooping = false;
     }
 
     /**
@@ -147,18 +179,15 @@ export class VfxController extends Component {
     stop(): void {
         if (!this.animation) return;
 
-        // 清除定时器
         if (this._hideTimer !== null) {
             clearTimeout(this._hideTimer);
             this._hideTimer = null;
         }
 
-        // 停止动画
         this.animation.stop();
-
-        // 隐藏节点
         this.node.active = false;
         this._isPlaying = false;
+        this._isLooping = false;
     }
 
     /**
@@ -184,6 +213,27 @@ export class VfxController extends Component {
     resume(): void {
         if (this.animation && this._isPlaying) {
             this.animation.resume();
+        }
+    }
+
+    onLoad() {
+        if (!this.animation) {
+            this.animation = this.node.getComponent(Animation);
+        }
+
+        if (this.animation && this.animation.defaultClip) {
+            console.log(`[VfxController] 初始化完成，动画: ${this.animation.defaultClip.name}`);
+        } else {
+            console.warn('[VfxController] 未找到 Animation 组件或默认动画剪辑');
+        }
+
+        this.node.active = false;
+    }
+
+    onDestroy() {
+        if (this._hideTimer !== null) {
+            clearTimeout(this._hideTimer);
+            this._hideTimer = null;
         }
     }
 }

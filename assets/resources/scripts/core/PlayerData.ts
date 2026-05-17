@@ -122,8 +122,32 @@ export class PlayerData {
     /** 每日重置时间（凌晨4点） */
     private readonly RESET_HOUR = 4;
 
+    /** 升级项最小值限制 */
+    static readonly UPGRADE_MIN_VALUE: Record<UpgradeType, number> = {
+        value: 0,
+        speed: 0.10,
+        lucky: 0,
+        critical: 0,
+        criticalBonus: 0,
+        pity: 1,
+        streakBonus: 0,
+        time: 0
+    };
+
+    /** 升级项最大值限制 */
+    static readonly UPGRADE_MAX_VALUE: Record<UpgradeType, number> = {
+        value: 0,
+        speed: 0,
+        lucky: 100,
+        critical: 100,
+        criticalBonus: 0,
+        pity: 0,
+        streakBonus: 0,
+        time: 0
+    };
+
     /** 8种升级项的固定配置（不会随游戏进度变化） */
-    private readonly UPGRADE_CONFIGS: Record<UpgradeType, UpgradeConfig> = {
+    private UPGRADE_CONFIGS: Record<UpgradeType, UpgradeConfig> = {
         value: {
             name: '面值',
             initialValue: 1,
@@ -308,17 +332,33 @@ export class PlayerData {
     calculateNextValue(type: UpgradeType): number {
         const config = this.UPGRADE_CONFIGS[type];
         const currentValue = this.getUpgradeValue(type);
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE[type];
 
+        let nextValue: number;
         switch (config.growthType) {
             case 'multiply':
-                return Math.ceil(currentValue * config.growthFactor);
+                nextValue = Math.ceil(currentValue * config.growthFactor);
+                break;
             case 'divide':
-                return Math.floor(currentValue / config.growthFactor);
+                nextValue = Math.floor(currentValue / config.growthFactor * 100) / 100;
+                break;
             case 'fixed':
-                return currentValue - 1;
+                nextValue = currentValue - 1;
+                break;
             default:
-                return currentValue;
+                nextValue = currentValue;
         }
+
+        // 限制在上下限范围内
+        if (minValue > 0) {
+            nextValue = Math.max(minValue, nextValue);
+        }
+        if (maxValue > 0) {
+            nextValue = Math.min(maxValue, nextValue);
+        }
+
+        return nextValue;
     }
 
     /**
@@ -338,9 +378,23 @@ export class PlayerData {
      */
     doUpgrade(type: UpgradeType): boolean {
         const price = this.getUpgradePrice(type);
+        const currentValue = this.getUpgradeValue(type);
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE[type];
+
+        // 检查是否已达上限/下限
+        if (minValue > 0 && currentValue <= minValue) {
+            console.log(`[PlayerData] ${type} 已达最小值限制: ${currentValue} <= ${minValue}`);
+            return false;
+        }
+        if (maxValue > 0 && currentValue >= maxValue) {
+            console.log(`[PlayerData] ${type} 已达最大值限制: ${currentValue} >= ${maxValue}`);
+            return false;
+        }
         
         // 检查余额是否足够
         if (!this.subtractBalance(price)) {
+            this.addBalance(price);
             return false;
         }
 
@@ -359,6 +413,51 @@ export class PlayerData {
         console.log(`[PlayerData] 升级成功: ${this.UPGRADE_CONFIGS[type].name} ${this.getUpgradeValue(type)} -> ${newValue}`);
         this.save();
         return true;
+    }
+
+    // ==================== 调试配置相关 ====================
+
+    /**
+     * 设置升级项的初始值和初始价格（用于调试）
+     */
+    setUpgradeConfig(type: UpgradeType, initialValue: number, initialPrice: number): void {
+        if (!this.UPGRADE_CONFIGS[type]) return;
+        this.UPGRADE_CONFIGS[type].initialValue = initialValue;
+        this.UPGRADE_CONFIGS[type].initialPrice = initialPrice;
+    }
+
+    /**
+     * 设置全局价格增长系数（用于调试）
+     */
+    setGlobalGrowthFactor(factor: number): void {
+        (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
+            this.UPGRADE_CONFIGS[type].growthFactor = factor;
+        });
+    }
+
+    /**
+     * 应用调试配置到当前升级状态（将当前状态重置为配置中的初始值）
+     */
+    applyDebugConfig(): void {
+        (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
+            const config = this.UPGRADE_CONFIGS[type];
+            this._upgrades[type] = {
+                value: config.initialValue,
+                price: config.initialPrice,
+                level: 0
+            };
+        });
+        this._balance = 0;
+        this._currentStreak = 0;
+        this._pityCounter = 0;
+        this._stats = {
+            totalFlips: 0,
+            totalCrits: 0,
+            maxBalance: 0,
+            maxStreak: 0,
+            totalAutoTime: 0
+        };
+        this.save();
     }
 
     // ==================== 生涯统计相关 ====================
@@ -486,11 +585,11 @@ export class PlayerData {
         const critBonus = this.getUpgradeValue('criticalBonus');
         const headProb = this.getUpgradeValue('lucky') / 100;
         const streakBonus = this.getUpgradeValue('streakBonus');
+        const streakRate = headProb * headProb;
 
         const ev = value 
-            + (critRate * critBonus) 
-            + (headProb * critBonus) 
-            + (streakBonus / 2);
+            + (value * critBonus * critRate) 
+            + (value * streakBonus * streakRate);
 
         return Math.floor(ev);
     }

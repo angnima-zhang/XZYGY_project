@@ -106,6 +106,54 @@ export class StatusPageCtrl extends Component {
     totalAutoTimeLabel: Label | null = null;
 
     /**
+     * 属性-面值 currentValue Label
+     */
+    @property({ type: Label, displayName: '面值', tooltip: 'StatusPage/upgrades/value/currentValue' })
+    valueLabel: Label | null = null;
+
+    /**
+     * 属性-速度 currentValue Label
+     */
+    @property({ type: Label, displayName: '速度', tooltip: 'StatusPage/upgrades/speed/currentValue' })
+    speedLabel: Label | null = null;
+
+    /**
+     * 属性-幸运 currentValue Label
+     */
+    @property({ type: Label, displayName: '幸运', tooltip: 'StatusPage/upgrades/lucky/currentValue' })
+    luckyLabel: Label | null = null;
+
+    /**
+     * 属性-暴击 currentValue Label
+     */
+    @property({ type: Label, displayName: '暴击率', tooltip: 'StatusPage/upgrades/critical/currentValue' })
+    criticalLabel: Label | null = null;
+
+    /**
+     * 属性-暴击加成 currentValue Label
+     */
+    @property({ type: Label, displayName: '暴击加成', tooltip: 'StatusPage/upgrades/criticalBonus/currentValue' })
+    criticalBonusLabel: Label | null = null;
+
+    /**
+     * 属性-保底 currentValue Label
+     */
+    @property({ type: Label, displayName: '保底', tooltip: 'StatusPage/upgrades/pity/currentValue' })
+    pityLabel: Label | null = null;
+
+    /**
+     * 属性-连击加成 currentValue Label
+     */
+    @property({ type: Label, displayName: '连击加成', tooltip: 'StatusPage/upgrades/streakBonus/currentValue' })
+    streakBonusLabel: Label | null = null;
+
+    /**
+     * 属性-自动时间 currentValue Label
+     */
+    @property({ type: Label, displayName: '自动时间', tooltip: 'StatusPage/upgrades/time/currentValue' })
+    timeLabel: Label | null = null;
+
+    /**
      * 游戏管理器实例
      */
     private _gameManager: GameManager | null = null;
@@ -198,6 +246,47 @@ export class StatusPageCtrl extends Component {
 
         if (this.totalAutoTimeLabel) {
             this.totalAutoTimeLabel.string = NumberFormatter.formatTime(stats.totalAutoTime);
+        }
+
+        this.refreshUpgrades();
+    }
+
+    /**
+     * 刷新 8 个属性 currentValue
+     */
+    private refreshUpgrades(): void {
+        if (!this._gameManager) return;
+
+        if (this.valueLabel) {
+            this.valueLabel.string = NumberFormatter.formatMoney(this._gameManager.getUpgradeValue('value'));
+        }
+
+        if (this.speedLabel) {
+            this.speedLabel.string = NumberFormatter.formatTimeDecimal(this._gameManager.getUpgradeValue('speed'));
+        }
+
+        if (this.luckyLabel) {
+            this.luckyLabel.string = NumberFormatter.formatPercent(this._gameManager.getUpgradeValue('lucky'));
+        }
+
+        if (this.criticalLabel) {
+            this.criticalLabel.string = NumberFormatter.formatPercent(this._gameManager.getUpgradeValue('critical'));
+        }
+
+        if (this.criticalBonusLabel) {
+            this.criticalBonusLabel.string = NumberFormatter.formatMoney(this._gameManager.getUpgradeValue('criticalBonus'));
+        }
+
+        if (this.pityLabel) {
+            this.pityLabel.string = NumberFormatter.formatCount(this._gameManager.getUpgradeValue('pity'));
+        }
+
+        if (this.streakBonusLabel) {
+            this.streakBonusLabel.string = NumberFormatter.formatMoney(this._gameManager.getUpgradeValue('streakBonus'));
+        }
+
+        if (this.timeLabel) {
+            this.timeLabel.string = NumberFormatter.formatTime(this._gameManager.getUpgradeValue('time'));
         }
     }
 }

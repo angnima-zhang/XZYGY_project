@@ -43,7 +43,7 @@
 
 import { _decorator, Component, Node, Label, tween, Vec3, UIOpacity } from 'cc';
 import { GameManager } from '../core/GameManager';
-import { UpgradeType } from '../core/PlayerData';
+import { NumberFormatter } from '../utils/NumberFormatter';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -223,7 +223,8 @@ export class StatsPopupCtrl extends Component {
 
     /**
      * 刷新预期收益
-     * 公式：E = 面值 + (暴击率 × 暴击加成) + (正面概率 × 暴击加成) + 连击加成 / 2
+     * 公式：面值 + 面值×暴击加成×暴击率 + 面值×连击加成×(连击率×连击率)
+     * 连击率 = 正面概率 × 正面概率（连续2次及以上正面才算连击）
      */
     private refreshExpectedValue(): void {
         if (!this.expectedValueLabel || !this._gameManager) return;
@@ -267,52 +268,44 @@ export class StatsPopupCtrl extends Component {
     private refreshAttributes(): void {
         if (!this._gameManager) return;
 
-        // 属性1：面值
         if (this.attr1ValueLabel) {
             const value = this._gameManager.getUpgradeValue('value');
-            this.attr1ValueLabel.string = `${value}`;
+            this.attr1ValueLabel.string = NumberFormatter.formatMoney(value);
         }
 
-        // 属性2：动画速度
         if (this.attr2AnimSpeedLabel) {
-            const speed = this._gameManager.getUpgradeValue('animSpeed');
-            this.attr2AnimSpeedLabel.string = `${speed}秒`;
+            const speed = this._gameManager.getUpgradeValue('speed');
+            this.attr2AnimSpeedLabel.string = NumberFormatter.formatTimeDecimal(speed);
         }
 
-        // 属性3：正面概率
         if (this.attr3HeadProbLabel) {
-            const headProb = this._gameManager.getUpgradeValue('headProb');
-            this.attr3HeadProbLabel.string = `${headProb}%`;
+            const lucky = this._gameManager.getUpgradeValue('lucky');
+            this.attr3HeadProbLabel.string = NumberFormatter.formatPercent(lucky);
         }
 
-        // 属性4：暴击率
         if (this.attr4CritRateLabel) {
-            const critRate = this._gameManager.getUpgradeValue('critRate');
-            this.attr4CritRateLabel.string = `${critRate}%`;
+            const critical = this._gameManager.getUpgradeValue('critical');
+            this.attr4CritRateLabel.string = NumberFormatter.formatPercent(critical);
         }
 
-        // 属性5：暴击加成
         if (this.attr5CritBonusLabel) {
-            const critBonus = this._gameManager.getUpgradeValue('critBonus');
-            this.attr5CritBonusLabel.string = `${critBonus}`;
+            const critBonus = this._gameManager.getUpgradeValue('criticalBonus');
+            this.attr5CritBonusLabel.string = NumberFormatter.formatMoney(critBonus);
         }
 
-        // 属性6：保底
         if (this.attr6PityLabel) {
             const pity = this._gameManager.getUpgradeValue('pity');
-            this.attr6PityLabel.string = `${pity}次`;
+            this.attr6PityLabel.string = NumberFormatter.formatCount(pity);
         }
 
-        // 属性7：连击加成
         if (this.attr7StreakBonusLabel) {
             const streakBonus = this._gameManager.getUpgradeValue('streakBonus');
-            this.attr7StreakBonusLabel.string = `${streakBonus}`;
+            this.attr7StreakBonusLabel.string = NumberFormatter.formatMoney(streakBonus);
         }
 
-        // 属性8：自动持续时间
         if (this.attr8AutoDurationLabel) {
-            const autoDuration = this._gameManager.getUpgradeValue('autoDuration');
-            this.attr8AutoDurationLabel.string = `${autoDuration}秒`;
+            const autoDuration = this._gameManager.getUpgradeValue('time');
+            this.attr8AutoDurationLabel.string = NumberFormatter.formatTime(autoDuration);
         }
     }
 

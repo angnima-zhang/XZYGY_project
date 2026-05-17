@@ -41,17 +41,46 @@ export class NumberFormatter {
 
     /**
      * 格式化时间（秒数转换为时分秒格式）
-     * 永远保留2位小数（仅对秒部分）
+     * 仅显示整数（用于 time 升级项）
+     * 
+     * @param seconds 秒数
+     * @returns 格式化后的字符串
+     * 
+     * 示例：
+     * 5 -> "5秒"
+     * 90 -> "1分30秒"
+     * 3665 -> "1时1分5秒"
+     */
+    static formatTime(seconds: number): string {
+        const totalSeconds = Math.round(seconds);
+        if (totalSeconds < 60) {
+            return totalSeconds + '秒';
+        } else if (totalSeconds < 3600) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const remainingSeconds = totalSeconds % 60;
+            return `${minutes}分${remainingSeconds}秒`;
+        } else {
+            const hours = Math.floor(totalSeconds / 3600);
+            const remainingAfterHours = totalSeconds % 3600;
+            const minutes = Math.floor(remainingAfterHours / 60);
+            const remainingSeconds = remainingAfterHours % 60;
+            return `${hours}时${minutes}分${remainingSeconds}秒`;
+        }
+    }
+
+    /**
+     * 格式化时间（秒数，保留2位小数）
+     * 用于 speed 升级项
      * 
      * @param seconds 秒数
      * @returns 格式化后的字符串
      * 
      * 示例：
      * 5 -> "5.00秒"
-     * 90 -> "1分30.00秒"
-     * 3665 -> "1时1分5.00秒"
+     * 1.5 -> "1.50秒"
+     * 90.5 -> "1分30.50秒"
      */
-    static formatTime(seconds: number): string {
+    static formatTimeDecimal(seconds: number): string {
         if (seconds < 60) {
             return seconds.toFixed(2) + '秒';
         } else if (seconds < 3600) {

@@ -32,6 +32,7 @@
 import { _decorator, Component, Node, Label, Button, Sprite, Color, Enum } from 'cc';
 import { GameManager } from '../core/GameManager';
 import { UpgradeType } from '../core/PlayerData';
+import { PlayerData } from '../core/PlayerData';
 import { NumberFormatter } from '../utils/NumberFormatter';
 
 // 解构装饰器
@@ -135,6 +136,10 @@ export class UpgradeItemCtrl extends Component {
      */
     private _upgradeButtonOriginalColor: Color | null = null;
 
+    private _flipCallback: ((result: any) => void) | null = null;
+
+    private _balanceChangeCallback: (() => void) | null = null;
+
     /**
      * 组件加载时调用
      */
@@ -154,21 +159,31 @@ export class UpgradeItemCtrl extends Component {
             this.adButtonNode.on(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
         }
 
+        // 注册翻转事件回调，实时刷新按钮状态
+        this._flipCallback = this._onEventCallback.bind(this);
+        this._gameManager.onFlip(this._flipCallback);
+
+        // 注册余额变更回调，实时刷新按钮状态
+        this._balanceChangeCallback = this._onEventCallback.bind(this);
+        this._gameManager.onBalanceChange(this._balanceChangeCallback);
+
         console.log(`[UpgradeItemCtrl] 初始化完成，类型: ${this.upgradeType}`);
     }
 
-    /**
-     * 组件启用时调用
-     */
     onEnable() {
         this.refreshUI();
     }
 
-    /**
-     * 组件销毁时调用
-     */
     onDestroy() {
         try {
+            if (this._gameManager) {
+                if (this._flipCallback) {
+                    this._gameManager.offFlip(this._flipCallback);
+                }
+                if (this._balanceChangeCallback) {
+                    this._gameManager.offBalanceChange(this._balanceChangeCallback);
+                }
+            }
             if (this.upgradeButtonNode && this.upgradeButtonNode.isValid) {
                 this.upgradeButtonNode.off(Node.EventType.TOUCH_END, this.onUpgradeClick, this);
             }
@@ -177,6 +192,12 @@ export class UpgradeItemCtrl extends Component {
             }
         } catch (e) {
             console.warn('[UpgradeItemCtrl] onDestroy cleanup error:', e);
+        }
+    }
+
+    private _onEventCallback(): void {
+        if (this.node.activeInHierarchy) {
+            this.refreshUI();
         }
     }
 
@@ -254,6 +275,9 @@ export class UpgradeItemCtrl extends Component {
                 nextStr = NumberFormatter.formatMoney(nextValue);
                 break;
             case 'speed':
+                currentStr = NumberFormatter.formatTimeDecimal(currentValue);
+                nextStr = NumberFormatter.formatTimeDecimal(nextValue);
+                break;
             case 'time':
                 currentStr = NumberFormatter.formatTime(currentValue);
                 nextStr = NumberFormatter.formatTime(nextValue);
@@ -297,17 +321,19 @@ export class UpgradeItemCtrl extends Component {
         const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType);
         const balance = this._gameManager.getBalance();
         const canAfford = balance >= currentPrice;
+        const isAtLimit = this._isUpgradeAtLimit();
+        const canBuy = canAfford && !isAtLimit;
 
         if (this.upgradeButtonNode) {
             const button = this.upgradeButtonNode.getComponent(Button);
             const sprite = this.upgradeButtonNode.getComponent(Sprite);
 
             if (button) {
-                button.interactable = canAfford;
+                button.interactable = canBuy;
             }
 
             if (sprite) {
-                if (canAfford) {
+                if (canBuy) {
                     if (this._upgradeButtonOriginalColor) {
                         sprite.color = this._upgradeButtonOriginalColor;
                     }
@@ -315,13 +341,34 @@ export class UpgradeItemCtrl extends Component {
                     sprite.color = this.GRAY_COLOR;
                 }
             }
+
+            if (isAtLimit) {
+                const btnLabel = this.upgradeButtonNode.getComponentInChildren(Label);
+                if (btnLabel) {
+                    btnLabel.string = '已满级';
+                }
+            }
         }
 
         if (this.adButtonNode) {
             const adButton = this.adButtonNode.getComponent(Button);
             if (adButton) {
-                adButton.interactable = true;
+                adButton.interactable = !isAtLimit;
+            }
+
+            if (isAtLimit) {
+                const adLabel = this.adButtonNode.getComponentInChildren(Label);
+                if (adLabel) {
+                    adLabel.string = '已满级';
+                }
             }
         }
+    }
+
+    private _isUpgradeAtLimit(): boolean {
+        const currentValue = this._gameManager.getUpgradeValue(this.upgradeType);
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[this.upgradeType];
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE[this.upgradeType];
+        return (minValue > 0 && currentValue <= minValue) || (maxValue > 0 && currentValue >= maxValue);
     }
 }

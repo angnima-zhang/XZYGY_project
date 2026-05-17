@@ -20,6 +20,7 @@
 import { _decorator, Component, Node, Label, Button, Sprite, Color } from 'cc';
 import { GameManager } from '../core/GameManager';
 import { NumberFormatter } from '../utils/NumberFormatter';
+import { PlayerData } from '../core/PlayerData';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -75,6 +76,10 @@ export class AutoFlipBuyCtrl extends Component {
      */
     private _buyButtonOriginalColor: Color | null = null;
 
+    private _flipCallback: ((result: any) => void) | null = null;
+
+    private _balanceChangeCallback: (() => void) | null = null;
+
     /**
      * 组件加载时调用
      */
@@ -94,21 +99,31 @@ export class AutoFlipBuyCtrl extends Component {
             this.adButtonNode.on(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
         }
 
+        // 注册翻转事件回调，实时刷新按钮状态
+        this._flipCallback = this._onEventCallback.bind(this);
+        this._gameManager.onFlip(this._flipCallback);
+
+        // 注册余额变更回调，实时刷新按钮状态
+        this._balanceChangeCallback = this._onEventCallback.bind(this);
+        this._gameManager.onBalanceChange(this._balanceChangeCallback);
+
         console.log('[AutoFlipBuyCtrl] 初始化完成');
     }
 
-    /**
-     * 组件启用时调用
-     */
     onEnable() {
         this.refreshUI();
     }
 
-    /**
-     * 组件销毁时调用
-     */
     onDestroy() {
         try {
+            if (this._gameManager) {
+                if (this._flipCallback) {
+                    this._gameManager.offFlip(this._flipCallback);
+                }
+                if (this._balanceChangeCallback) {
+                    this._gameManager.offBalanceChange(this._balanceChangeCallback);
+                }
+            }
             if (this.buyButtonNode && this.buyButtonNode.isValid) {
                 this.buyButtonNode.off(Node.EventType.TOUCH_END, this.onBuyClick, this);
             }
@@ -117,6 +132,12 @@ export class AutoFlipBuyCtrl extends Component {
             }
         } catch (e) {
             console.warn('[AutoFlipBuyCtrl] onDestroy cleanup error:', e);
+        }
+    }
+
+    private _onEventCallback(): void {
+        if (this.node.activeInHierarchy) {
+            this.refreshUI();
         }
     }
 
@@ -143,6 +164,9 @@ export class AutoFlipBuyCtrl extends Component {
 
         // 扣除余额
         this._gameManager.getPlayerData().subtractBalance(price);
+
+        // 通知余额变更
+        this._gameManager.notifyBalanceChange();
 
         // 启动自动翻转
         this._gameManager.startAutoFlip();
@@ -201,17 +225,19 @@ export class AutoFlipBuyCtrl extends Component {
         const balance = this._gameManager.getBalance();
         const canAfford = balance >= price;
         const isAutoFlipping = this._gameManager.isAutoFlipping();
+        const isAtLimit = this._isUpgradeAtLimit();
+        const canBuy = canAfford && !isAutoFlipping && !isAtLimit;
 
         if (this.buyButtonNode) {
             const button = this.buyButtonNode.getComponent(Button);
             const sprite = this.buyButtonNode.getComponent(Sprite);
 
             if (button) {
-                button.interactable = canAfford && !isAutoFlipping;
+                button.interactable = canBuy;
             }
 
             if (sprite) {
-                if (canAfford && !isAutoFlipping) {
+                if (canBuy) {
                     if (this._buyButtonOriginalColor) {
                         sprite.color = this._buyButtonOriginalColor;
                     }
@@ -219,13 +245,34 @@ export class AutoFlipBuyCtrl extends Component {
                     sprite.color = this.GRAY_COLOR;
                 }
             }
+
+            if (isAtLimit) {
+                const btnLabel = this.buyButtonNode.getComponentInChildren(Label);
+                if (btnLabel) {
+                    btnLabel.string = '已满级';
+                }
+            }
         }
 
         if (this.adButtonNode) {
             const adButton = this.adButtonNode.getComponent(Button);
             if (adButton) {
-                adButton.interactable = true;
+                adButton.interactable = !isAtLimit && !isAutoFlipping;
+            }
+
+            if (isAtLimit) {
+                const adLabel = this.adButtonNode.getComponentInChildren(Label);
+                if (adLabel) {
+                    adLabel.string = '已满级';
+                }
             }
         }
+    }
+
+    private _isUpgradeAtLimit(): boolean {
+        const currentValue = this._gameManager.getUpgradeValue('time');
+        const minValue = PlayerData.UPGRADE_MIN_VALUE['time'];
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE['time'];
+        return (minValue > 0 && currentValue <= minValue) || (maxValue > 0 && currentValue >= maxValue);
     }
 }

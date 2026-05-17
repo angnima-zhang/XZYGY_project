@@ -200,6 +200,19 @@ export class VfxManager extends Component {
         let totalCount = 0;
         this._controllers.forEach(arr => totalCount += arr.length);
         console.log(`[VfxManager] 初始化完成，共注册 ${totalCount} 个 VFX 控制器`);
+
+        // 打印 autoing 详细信息
+        if (this.autoingVfx) {
+            console.log(`[VfxManager] autoingVfx 节点 active=${this.autoingVfx.active}, 子节点数=${this.autoingVfx.children.length}`);
+            const ctrl = this.autoingVfx.getComponent(VfxController);
+            if (ctrl) {
+                console.log(`[VfxManager] autoingVfx VfxController animation=${!!ctrl.animation}, clips=${ctrl.animation?.clips.length ?? 0}`);
+            } else {
+                console.warn('[VfxManager] autoingVfx 节点未挂载 VfxController!');
+            }
+        } else {
+            console.error('[VfxManager] autoingVfx 节点未配置!');
+        }
     }
 
     /**
@@ -254,6 +267,31 @@ export class VfxManager extends Component {
         const controllers = this.getControllers(name);
         for (const ctrl of controllers) {
             ctrl.play(duration);
+        }
+    }
+
+    /**
+     * 开始循环播放 VFX 特效（已在循环中则不重播）
+     * @param name VFX 名称
+     */
+    private playLoopingVfx(name: string): void {
+        const controllers = this.getControllers(name);
+        console.log(`[VfxManager] playLoopingVfx('${name}'), controllers=${controllers.length}`);
+        for (const ctrl of controllers) {
+            console.log(`[VfxManager] 调用 VfxController.playLooping(), node=${ctrl.node?.name}`);
+            ctrl.playLooping();
+        }
+    }
+
+    /**
+     * 停止循环播放 VFX 特效
+     * @param name VFX 名称
+     */
+    private stopLoopingVfx(name: string): void {
+        const controllers = this.getControllers(name);
+        console.log(`[VfxManager] stopLoopingVfx('${name}'), controllers=${controllers.length}`);
+        for (const ctrl of controllers) {
+            ctrl.stopLooping();
         }
     }
 
@@ -313,12 +351,28 @@ export class VfxManager extends Component {
     }
 
     /**
-     * 播放连击特效 + 音效
-     * 触发时机：连击数增加时
+     * 开始连击特效循环（持续连击时不重播）
+     * 触发时机：连击数持续增加时
      */
     playStreak(): void {
-        this.playVfx('streak', 0.5);
+        this.playLoopingVfx('streak');
         this.playAudioClip(this.streakClip);
+    }
+
+    /**
+     * 停止连击特效循环
+     * 触发时机：连击断开时
+     */
+    stopStreak(): void {
+        this.stopLoopingVfx('streak');
+    }
+
+    /**
+     * 播放 UpgradeSection auto VFX（一次）
+     * 触发时机：购买自动翻转时
+     */
+    playAutoMainPage(): void {
+        this.playVfx('autoMainPage', 0.8);
     }
 
     /**
@@ -326,7 +380,8 @@ export class VfxManager extends Component {
      * 触发时机：开始自动翻转时
      */
     playAutoing(): void {
-        this.playVfx('autoing', 0);
+        console.log('[VfxManager] playAutoing 被调用');
+        this.playLoopingVfx('autoing');
         this.playAudioClip(this.autoStartClip);
     }
 
@@ -335,7 +390,8 @@ export class VfxManager extends Component {
      * 触发时机：停止自动翻转时
      */
     stopAutoing(): void {
-        this.stopVfx('autoing');
+        console.log('[VfxManager] stopAutoing 被调用');
+        this.stopLoopingVfx('autoing');
         this.playAudioClip(this.autoStopClip);
     }
 
