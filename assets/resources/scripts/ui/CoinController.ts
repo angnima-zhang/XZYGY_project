@@ -565,6 +565,12 @@ export class CoinController extends Component {
         
         if (!result) return;
 
+        // 自动翻转状态下播放硬币动画
+        if (this._gameManager.isAutoFlipping() && !this._isAnimating) {
+            console.log('[CoinController] 自动翻转中，播放硬币动画');
+            this.playFlipAnimation(result);
+        }
+
         // 更新 UI 显示
         this.updateUI(result);
 

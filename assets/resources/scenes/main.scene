@@ -3075,7 +3075,7 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "playOnLoad": true,
+    "playOnLoad": false,
     "_clips": [
       {
         "__uuid__": "24315479-8fe8-41f0-a9ee-2ba0bdbefe2c",
