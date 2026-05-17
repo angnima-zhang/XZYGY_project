@@ -117,29 +117,34 @@ export class VfxController extends Component {
             return;
         }
 
-        // 先停止已有动画并重置状态
-        this.animation.stop();
+        // 先激活节点
+        this.node.active = true;
+        this._isPlaying = true;
+        this._isLooping = true;
 
         // 设置循环模式到 clip
         for (const clip of this.animation.clips) {
             clip.wrapMode = 2;
         }
 
-        // 先激活节点，然后立即播放
-        this.node.active = true;
-        this._isPlaying = true;
-        this._isLooping = true;
+        // 延迟一帧播放，确保节点激活后 Animation 组件完成初始化
+        this.scheduleOnce(() => {
+            if (!this.animation || !this._isLooping) return;
 
-        // 获取或创建动画状态
-        let state = this.animation.getState(clipName);
-        if (!state) {
-            state = this.animation.createState(this.animation.defaultClip ?? this.animation.clips[0], clipName);
-        }
-        state.wrapMode = 2;
-        state.time = 0;
+            // 停止已有动画并重置状态
+            this.animation.stop();
 
-        this.animation.play(clipName);
-        console.log('[VfxController] playLooping: animation.play() 已调用');
+            // 获取或创建动画状态
+            let state = this.animation.getState(clipName);
+            if (!state) {
+                state = this.animation.createState(this.animation.defaultClip ?? this.animation.clips[0], clipName);
+            }
+            state.wrapMode = 2;
+            state.time = 0;
+
+            this.animation.play(clipName);
+            console.log('[VfxController] playLooping: animation.play() 已调用');
+        }, 0);
     }
 
     /**
