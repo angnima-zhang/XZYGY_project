@@ -93,10 +93,45 @@ export class CoinController extends Component {
     autoingNode: Node | null = null;
 
     /**
+     * 自动时间倒计时 Label
+     */
+    @property({ type: Label, displayName: '自动时间Label', tooltip: 'autoing/time 节点的 Label 组件' })
+    autoTimeLabel: Label | null = null;
+
+    /**
      * 保底特效节点
      */
     @property({ type: Node, displayName: '保底特效节点', tooltip: 'pity 节点' })
     pityNode: Node | null = null;
+
+    /**
+     * 自动翻转回调引用（用于 onDestroy 中移除）
+     */
+    private _autoFlipStartCallback: ((duration: number) => void) | null = null;
+    private _autoFlipStopCallback: (() => void) | null = null;
+
+    /**
+     * 自动翻转倒计时
+     */
+    private _autoFlipRemaining: number = 0;
+    private _autoFlipCountdownTimer: number = 0;
+
+    /**
+     * 每帧更新调用
+     * 处理自动翻转倒计时
+     */
+    update(dt: number): void {
+        if (this._autoFlipRemaining > 0 && this.autoingNode.active) {
+            this._autoFlipCountdownTimer += dt;
+            if (this._autoFlipCountdownTimer >= 1) {
+                this._autoFlipCountdownTimer -= 1;
+                this._autoFlipRemaining = Math.max(0, this._autoFlipRemaining - 1);
+                if (this.autoTimeLabel) {
+                    this.autoTimeLabel.string = this.formatTime(Math.ceil(this._autoFlipRemaining));
+                }
+            }
+        }
+    }
 
     /**
      * DebugConfig 节点引用（用于获取调试翻转时长）
@@ -223,6 +258,12 @@ export class CoinController extends Component {
         // 注册翻转事件回调
         this._gameManager.onFlip(this._boundOnFlipResult);
 
+        // 注册自动翻转回调
+        this._autoFlipStartCallback = this._onAutoFlipStart.bind(this);
+        this._autoFlipStopCallback = this._onAutoFlipStop.bind(this);
+        this._gameManager.onAutoFlipStart(this._autoFlipStartCallback);
+        this._gameManager.onAutoFlipStop(this._autoFlipStopCallback);
+
         // 绑定硬币点击事件
         this.node.on(Node.EventType.TOUCH_END, this.onCoinClick, this);
 
@@ -265,6 +306,12 @@ export class CoinController extends Component {
         // 移除事件监听
         if (this._gameManager) {
             this._gameManager.offFlip(this._boundOnFlipResult);
+        }
+        if (this._autoFlipStartCallback) {
+            this._gameManager?.offAutoFlipStart(this._autoFlipStartCallback);
+        }
+        if (this._autoFlipStopCallback) {
+            this._gameManager?.offAutoFlipStop(this._autoFlipStopCallback);
         }
         this.node.off(Node.EventType.TOUCH_END, this.onCoinClick, this);
     }
@@ -776,6 +823,51 @@ export class CoinController extends Component {
         if (this.criticalNode) this.criticalNode.active = false;
         if (this.pityNode) this.pityNode.active = false;
         if (this.autoingNode) this.autoingNode.active = false;
+    }
+
+    /**
+     * 自动翻转开始回调
+     */
+    private _onAutoFlipStart(duration: number): void {
+        console.log(`[CoinController] 自动翻转开始，持续时间: ${duration} 秒`);
+        if (this.autoingNode) {
+            this.autoingNode.active = true;
+            // 初始化倒计时
+            this._autoFlipRemaining = duration;
+            this._autoFlipCountdownTimer = 0;
+            if (this.autoTimeLabel) {
+                this.autoTimeLabel.string = this.formatTime(Math.ceil(this._autoFlipRemaining));
+            }
+        }
+    }
+
+    /**
+     * 自动翻转停止回调
+     */
+    private _onAutoFlipStop(): void {
+        console.log('[CoinController] 自动翻转停止');
+        this._autoFlipRemaining = 0;
+        this._autoFlipCountdownTimer = 0;
+        if (this.autoingNode) {
+            this.autoingNode.active = false;
+        }
+    }
+
+    /**
+     * 格式化时间为时:分:秒
+     */
+    private formatTime(totalSeconds: number): string {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        if (hours > 0) {
+            return `${hours}时${minutes}分${seconds}秒`;
+        } else if (minutes > 0) {
+            return `${minutes}分${seconds}秒`;
+        } else {
+            return `${seconds}秒`;
+        }
     }
 
     /**

@@ -262,7 +262,7 @@ export class StatusPageCtrl extends Component {
         }
 
         if (this.speedLabel) {
-            this.speedLabel.string = NumberFormatter.formatTime(this._gameManager.getUpgradeValue('speed'));
+            this.speedLabel.string = NumberFormatter.formatTimeDecimal(this._gameManager.getUpgradeValue('speed'));
         }
 
         if (this.luckyLabel) {

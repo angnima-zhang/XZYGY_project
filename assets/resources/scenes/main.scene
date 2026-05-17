@@ -678,6 +678,9 @@
     "autoingNode": {
       "__id__": 64
     },
+    "autoTimeLabel": {
+      "__id__": 70
+    },
     "pityNode": {
       "__id__": 78
     },
@@ -1537,8 +1540,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 30,
-      "height": 44
+      "width": 95,
+      "height": 95
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1573,7 +1576,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -3680,7 +3683,7 @@
     "pity_initialPrice": 5,
     "streakBonus_initialValue": 0,
     "streakBonus_initialPrice": 5,
-    "time_initialValue": 10,
+    "time_initialValue": 61,
     "time_initialPrice": 5,
     "global_growthFactor": 1.2,
     "flipDuration": 1.5,

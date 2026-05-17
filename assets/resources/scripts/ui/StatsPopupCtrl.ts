@@ -275,7 +275,7 @@ export class StatsPopupCtrl extends Component {
 
         if (this.attr2AnimSpeedLabel) {
             const speed = this._gameManager.getUpgradeValue('speed');
-            this.attr2AnimSpeedLabel.string = NumberFormatter.formatTime(speed);
+            this.attr2AnimSpeedLabel.string = NumberFormatter.formatTimeDecimal(speed);
         }
 
         if (this.attr3HeadProbLabel) {

@@ -48,6 +48,12 @@ type FlipCallback = (result: FlipResult) => void;
 
 type BalanceChangeCallback = () => void;
 
+type AutoFlipStartCallback = (duration: number) => void;
+
+type AutoFlipStopCallback = () => void;
+
+type AutoFlipTickCallback = (remaining: number) => void;
+
 export class GameManager {
     /** 单例实例 */
     private static _instance: GameManager | null = null;
@@ -71,6 +77,15 @@ export class GameManager {
 
     /** 余额变更回调列表 */
     private _balanceChangeCallbacks: BalanceChangeCallback[] = [];
+
+    /** 自动翻转开始回调列表 */
+    private _autoFlipStartCallbacks: AutoFlipStartCallback[] = [];
+
+    /** 自动翻转停止回调列表 */
+    private _autoFlipStopCallbacks: AutoFlipStopCallback[] = [];
+
+    /** 自动翻转每秒心跳回调列表 */
+    private _autoFlipTickCallbacks: AutoFlipTickCallback[] = [];
 
     /** 是否正在翻转中（防止动画期间重复点击） */
     private _isFlipping: boolean = false;
@@ -147,6 +162,84 @@ export class GameManager {
     notifyBalanceChange(): void {
         for (const callback of this._balanceChangeCallbacks) {
             callback();
+        }
+    }
+
+    /**
+     * 注册自动翻转开始回调
+     */
+    onAutoFlipStart(callback: AutoFlipStartCallback): void {
+        this._autoFlipStartCallbacks.push(callback);
+    }
+
+    /**
+     * 移除自动翻转开始回调
+     */
+    offAutoFlipStart(callback: AutoFlipStartCallback): void {
+        const index = this._autoFlipStartCallbacks.indexOf(callback);
+        if (index >= 0) {
+            this._autoFlipStartCallbacks.splice(index, 1);
+        }
+    }
+
+    /**
+     * 注册自动翻转停止回调
+     */
+    onAutoFlipStop(callback: AutoFlipStopCallback): void {
+        this._autoFlipStopCallbacks.push(callback);
+    }
+
+    /**
+     * 移除自动翻转停止回调
+     */
+    offAutoFlipStop(callback: AutoFlipStopCallback): void {
+        const index = this._autoFlipStopCallbacks.indexOf(callback);
+        if (index >= 0) {
+            this._autoFlipStopCallbacks.splice(index, 1);
+        }
+    }
+
+    /**
+     * 注册自动翻转每秒心跳回调
+     */
+    onAutoFlipTick(callback: AutoFlipTickCallback): void {
+        this._autoFlipTickCallbacks.push(callback);
+    }
+
+    /**
+     * 移除自动翻转每秒心跳回调
+     */
+    offAutoFlipTick(callback: AutoFlipTickCallback): void {
+        const index = this._autoFlipTickCallbacks.indexOf(callback);
+        if (index >= 0) {
+            this._autoFlipTickCallbacks.splice(index, 1);
+        }
+    }
+
+    /**
+     * 通知自动翻转开始
+     */
+    private notifyAutoFlipStart(duration: number): void {
+        for (const callback of this._autoFlipStartCallbacks) {
+            callback(duration);
+        }
+    }
+
+    /**
+     * 通知自动翻转停止
+     */
+    private notifyAutoFlipStop(): void {
+        for (const callback of this._autoFlipStopCallbacks) {
+            callback();
+        }
+    }
+
+    /**
+     * 通知自动翻转每秒心跳（剩余时间）
+     */
+    private notifyAutoFlipTick(remaining: number): void {
+        for (const callback of this._autoFlipTickCallbacks) {
+            callback(remaining);
         }
     }
 
@@ -607,6 +700,9 @@ export class GameManager {
         const duration = this.getAutoDuration();
         console.log(`[GameManager] 开始自动翻转，持续 ${duration} 秒`);
 
+        // 通知 UI
+        this.notifyAutoFlipStart(duration);
+
         // 使用 setInterval 按照动画速度定时翻转
         const intervalMs = this.getAnimDuration() * 1000;
         
@@ -618,6 +714,10 @@ export class GameManager {
 
             this._autoFlipAccumulatedTime += this.getAnimDuration();
             this.flipCoin();
+
+            // 通知剩余时间
+            const remaining = Math.max(0, duration - this._autoFlipAccumulatedTime);
+            this.notifyAutoFlipTick(remaining);
 
             // 检查是否达到持续时间
             if (this._autoFlipAccumulatedTime >= duration) {
@@ -647,6 +747,12 @@ export class GameManager {
 
         // 记录累计自动时间
         this._playerData.addAutoTime(Math.floor(this._autoFlipAccumulatedTime));
+        
+        // 通知余额变更（确保所有购买按钮刷新状态）
+        this.notifyBalanceChange();
+
+        // 通知 UI 自动翻转已停止
+        this.notifyAutoFlipStop();
         
         console.log(`[GameManager] 自动翻转停止，累计时间: ${this._autoFlipAccumulatedTime} 秒`);
         this._autoFlipAccumulatedTime = 0;

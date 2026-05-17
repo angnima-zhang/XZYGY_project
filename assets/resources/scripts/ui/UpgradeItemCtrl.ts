@@ -274,6 +274,9 @@ export class UpgradeItemCtrl extends Component {
                 nextStr = NumberFormatter.formatMoney(nextValue);
                 break;
             case 'speed':
+                currentStr = NumberFormatter.formatTimeDecimal(currentValue);
+                nextStr = NumberFormatter.formatTimeDecimal(nextValue);
+                break;
             case 'time':
                 currentStr = NumberFormatter.formatTime(currentValue);
                 nextStr = NumberFormatter.formatTime(nextValue);
