@@ -72,6 +72,15 @@ export class VfxController extends Component {
             console.warn('[VfxController] play: animation.clips 为空，跳过 wrapMode 设置');
         }
 
+        // 停止已有播放并重置时间，确保每次都能从头开始播放
+        this.animation.stop();
+        const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
+        if (clipName) {
+            let state = this.animation.getState(clipName);
+            if (state) {
+                state.time = 0;
+            }
+        }
         this.animation.play();
 
         const hideTime = duration > 0 ? duration : this.defaultDuration;
