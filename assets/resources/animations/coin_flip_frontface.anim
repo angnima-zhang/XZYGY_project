@@ -11,18 +11,21 @@
     "speed": 1,
     "wrapMode": 1,
     "enableTrsBlending": false,
-    "_duration": 1.388333333333336,
+    "_duration": 1.3833333333333333,
     "_hash": 500763545,
     "_tracks": [
       {
         "__id__": 1
+      },
+      {
+        "__id__": 6
       }
     ],
     "_exoticAnimation": null,
     "_events": [],
     "_embeddedPlayers": [],
     "_additiveSettings": {
-      "__id__": 6
+      "__id__": 16
     },
     "_auxiliaryCurveEntries": []
   },
@@ -62,124 +65,88 @@
     "__type__": "cc.ObjectCurve",
     "_times": [
       0,
-      0.011666666666666665,
-      0.02333333333333333,
-      0.034999999999999996,
-      0.04666666666666666,
-      0.058333333333333334,
-      0.07,
-      0.08166666666666668,
-      0.09333333333333334,
-      0.10500000000000001,
-      0.11666666666666668,
-      0.12833333333333335,
-      0.14,
-      0.15166666666666667,
-      0.1633333333333333,
-      0.17499999999999996,
-      0.18666666666666662,
-      0.19833333333333328,
-      0.20999999999999994,
-      0.2216666666666666,
-      0.23333333333333325,
-      0.2449999999999999,
-      0.25666666666666654,
-      0.26833333333333326,
-      0.2799999999999999,
-      0.2916666666666666,
-      0.3033333333333332,
-      0.31499999999999984,
-      0.3266666666666665,
-      0.33833333333333315,
-      0.3499999999999998,
-      0.36166666666666647,
-      0.37333333333333313,
-      0.3849999999999998,
-      0.39666666666666645,
-      0.4083333333333331,
-      0.41999999999999976,
-      0.4316666666666664,
-      0.4433333333333331,
-      0.45499999999999974,
-      0.4666666666666664,
-      0.478333333333333,
-      0.48999999999999966,
-      0.5016666666666664,
-      0.513333333333333,
-      0.5249999999999997,
-      0.5366666666666664,
-      0.5483333333333331,
-      0.5599999999999998,
-      0.5716666666666665,
-      0.5833333333333333,
-      0.595,
-      0.6066666666666667,
-      0.6183333333333334,
-      0.6300000000000001,
-      0.6416666666666668,
-      0.6533333333333335,
-      0.6650000000000003,
-      0.676666666666667,
+      0.016666666666666666,
+      0.03333333333333333,
+      0.05,
+      0.06666666666666667,
+      0.08333333333333333,
+      0.1,
+      0.11666666666666667,
+      0.13333333333333333,
+      0.15,
+      0.16666666666666666,
+      0.18333333333333332,
+      0.2,
+      0.21666666666666667,
+      0.23333333333333334,
+      0.25,
+      0.26666666666666666,
+      0.2833333333333333,
+      0.3,
+      0.31666666666666665,
+      0.3333333333333333,
+      0.35,
+      0.36666666666666664,
+      0.38333333333333336,
+      0.4,
+      0.4166666666666667,
+      0.43333333333333335,
+      0.45,
+      0.4666666666666667,
+      0.48333333333333334,
+      0.5,
+      0.5166666666666667,
+      0.5333333333333333,
+      0.55,
+      0.5666666666666667,
+      0.5833333333333334,
+      0.6,
+      0.6166666666666667,
+      0.6333333333333333,
+      0.65,
+      0.6666666666666666,
       0.6833333333333333,
-      0.6950000000000001,
-      0.7066666666666668,
-      0.7183333333333335,
-      0.7300000000000002,
-      0.7416666666666669,
-      0.7533333333333336,
-      0.7650000000000003,
-      0.7766666666666671,
-      0.7883333333333338,
-      0.8000000000000005,
-      0.8116666666666672,
-      0.8233333333333339,
-      0.8350000000000006,
-      0.8466666666666673,
-      0.8583333333333341,
-      0.8700000000000008,
-      0.8816666666666675,
-      0.8933333333333342,
-      0.9050000000000009,
-      0.9166666666666676,
-      0.9283333333333343,
-      0.9400000000000011,
-      0.9516666666666678,
-      0.9633333333333345,
-      0.9750000000000012,
-      0.9866666666666679,
-      0.9983333333333346,
-      1.0100000000000013,
-      1.021666666666668,
-      1.0333333333333348,
-      1.0450000000000015,
-      1.0566666666666682,
-      1.068333333333335,
-      1.0800000000000016,
-      1.0916666666666683,
-      1.103333333333335,
-      1.1150000000000018,
-      1.1266666666666685,
-      1.1383333333333352,
-      1.150000000000002,
-      1.1616666666666686,
-      1.1733333333333353,
-      1.185000000000002,
-      1.1966666666666688,
-      1.2083333333333355,
-      1.2200000000000022,
-      1.231666666666669,
-      1.2433333333333356,
-      1.2550000000000023,
-      1.266666666666669,
-      1.2783333333333358,
-      1.2900000000000025,
-      1.3016666666666692,
-      1.313333333333336,
-      1.3250000000000026,
-      1.3366666666666693,
-      1.348333333333336,
-      1.3600000000000028,
-      1.3716666666666695
+      0.7,
+      0.7166666666666667,
+      0.7333333333333333,
+      0.75,
+      0.7666666666666667,
+      0.7833333333333333,
+      0.8,
+      0.8166666666666667,
+      0.8333333333333334,
+      0.85,
+      0.8666666666666667,
+      0.8833333333333333,
+      0.9,
+      0.9166666666666666,
+      0.9333333333333333,
+      0.95,
+      0.9666666666666667,
+      0.9833333333333333,
+      1,
+      1.0166666666666666,
+      1.0333333333333334,
+      1.05,
+      1.0666666666666667,
+      1.0833333333333333,
+      1.1,
+      1.1166666666666667,
+      1.1333333333333333,
+      1.15,
+      1.1666666666666667,
+      1.1833333333333333,
+      1.2,
+      1.2166666666666666,
+      1.2333333333333334,
+      1.25,
+      1.2666666666666666,
+      1.2833333333333334,
+      1.3,
+      1.3166666666666667,
+      1.3333333333333333,
+      1.35,
+      1.3666666666666667
     ],
     "_values": [
       {
@@ -188,10 +155,6 @@
       },
       {
         "__uuid__": "0f5a1149-81cc-4b2f-9eba-be4bc8110c44@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "c3d184a2-ad89-4c9e-a0c3-f8a4350c94cf@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -207,19 +170,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "bdc16bc5-3699-4796-a083-49f4614cc2b9@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "16b1338a-0f7b-477b-be90-bce3b7a386fd@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "377664cb-8619-4d94-a654-f892d73483cf@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "2edefb49-cb55-40bc-8df0-dd5c35d02253@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -231,19 +186,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "e66d11e1-897e-43c0-88ff-2514a61195f4@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "e6dbc3d7-8d8d-4ede-8865-17b17181928c@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "40007d61-025e-4c6f-a396-57b943a4a919@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "f774b3b1-ac4e-4d83-a9ef-52329d3fe1cb@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -259,10 +206,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "3a50ee78-edf8-47c8-8fc0-32405b3dd363@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "fbc04867-37b3-4906-a121-2cc8e45e0462@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -271,19 +214,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "eebe56bd-bcf1-4b4c-b912-48e78f51af35@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "3e0e7be0-0ba2-4c2b-a900-b80fc6253e86@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "4a59e17c-97fe-4c90-9002-b57b4d2f0b15@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "9cb2eb2a-c789-440e-b113-162e26bbcb3c@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -299,10 +234,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "eff04838-fd71-448d-9001-61d2cc63443f@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "07d57767-6268-404b-b125-e630245e5b31@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -311,19 +242,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "4f3cfa4a-faf2-4484-98c7-8bf482652a62@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "ee46e6fa-896e-43df-851a-c4a33e2e8b40@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "8ab9a9f2-65f4-423a-b777-6006db2e6d70@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "ac2ed327-561f-47cb-a09c-7b17169f27dc@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -339,10 +262,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "c2609f81-0112-4eeb-bb8b-d1714514d454@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "cbfaefe8-be31-43b6-996e-5dcd22bee4c5@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -351,19 +270,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "77de02c8-c2e9-4359-9f8e-f7eaa2e93e4a@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "bc75a81d-c923-4281-a66f-30ea84b4ff16@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "03f4cb43-bba7-4abb-80b6-910f3319698b@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "c9fcd6bd-0a12-4663-8352-e4190ffba3d3@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -379,19 +290,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "fcda4143-5e93-4c3c-8449-108460a54968@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "148560b7-7b57-4943-b887-da5c7d956b33@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "7e63db23-e01a-495b-8f00-8bfeae2029e3@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "d11af3e2-3b84-498b-96db-e1bf91afdf91@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -407,10 +310,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "7e556b12-f114-4bb1-a57c-940d149a03c1@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "75c054aa-d9eb-4ec3-ab21-3952a69ee3c7@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -419,15 +318,7 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "6ac09bff-f685-436d-9049-35fb8271bf21@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "82d15a55-ec4f-42be-a19f-38a2c0066463@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "a26d5157-1cfb-4118-aba0-816e6080b7ed@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -443,10 +334,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "2f799a79-5d84-460c-ae8b-c0ce60269686@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "9a900b5f-09de-43b0-8d35-9619c7bb8c8b@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -455,19 +342,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "08d37773-7ec7-4724-9a9d-36b0f1553dfe@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "2fed28b0-814f-4d15-9317-30d1229311de@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "c664426a-e731-4b8a-95fa-403a3e67be85@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "f26267dc-2405-4b4d-a165-a8a999481982@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -483,10 +362,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "d8fdcaa4-c196-4022-a44a-843def3b168f@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "5706c310-6881-4ebb-8792-c887464685d0@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -495,19 +370,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "e13beb9b-8735-410f-abe2-2673c4a739a9@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "79784b08-8383-4277-ae8e-7849a04a486d@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "c42b3e36-64ed-4d7f-a4cd-2a293d56d95c@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "04b44477-2d13-4afd-9357-6bd16ce314ed@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -523,10 +390,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "55fb52e1-245a-4303-a0f4-203286c4fd25@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "adec3de7-bd5a-405e-a6fd-6816fa8c605f@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -535,19 +398,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "003aedd9-4084-43db-afe0-64714c525321@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "e50f5b98-0ea7-4c6e-91f8-be40885b9d9e@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "1a5f9499-7291-41f5-8c5d-ae5abd3c7d35@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "8c20c654-1876-44ff-96ad-9b557506cb84@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -563,10 +418,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "9b1f6486-6780-475a-99c9-0ad7d22b2b8b@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "6abc8ac2-0bc6-4e7a-9094-88aca7b1ffd9@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -575,19 +426,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "72d0a692-06ac-49f2-aeb0-6a6ea7bf743e@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "e09e1496-5eff-4bba-94bc-87ab0b2ae422@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "33fda8d3-0399-4fd1-b877-2eb06559e325@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "a2b6e89a-6b6a-41a2-9097-ce8d4ba075dc@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -603,10 +446,6 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "f8185677-bfc6-485f-aa88-bbe904413445@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "e5168dcf-afd9-48b9-a101-364211c6fbd0@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
@@ -615,19 +454,11 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "5ff78388-459f-4e11-9c81-6c3962849a56@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "cd4ab9e0-59c3-4486-8a55-002a0c14dc3a@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "da525fa4-610f-4d7c-8bae-17a37c71311c@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "1172a4fb-881c-4b30-8b2f-9581ab90db90@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
@@ -643,22 +474,191 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "ff2513d4-5a34-4344-95e3-6b802f34d368@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
         "__uuid__": "e223f24c-245a-44bd-9b45-aa841358a5b8@f9941",
         "__expectedType__": "cc.SpriteFrame"
       },
       {
         "__uuid__": "8c95b212-e287-460c-a4de-88e09f3afe58@f9941",
         "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "34e42390-d08f-4283-825a-9e5fc28e1348@f9941",
-        "__expectedType__": "cc.SpriteFrame"
       }
     ]
+  },
+  {
+    "__type__": "cc.animation.VectorTrack",
+    "_binding": {
+      "__type__": "cc.animation.TrackBinding",
+      "path": {
+        "__id__": 7
+      },
+      "proxy": null
+    },
+    "_channels": [
+      {
+        "__id__": 8
+      },
+      {
+        "__id__": 10
+      },
+      {
+        "__id__": 12
+      },
+      {
+        "__id__": 14
+      }
+    ],
+    "_nComponents": 3
+  },
+  {
+    "__type__": "cc.animation.TrackPath",
+    "_paths": [
+      "scale"
+    ]
+  },
+  {
+    "__type__": "cc.animation.Channel",
+    "_curve": {
+      "__id__": 9
+    }
+  },
+  {
+    "__type__": "cc.RealCurve",
+    "_times": [
+      0,
+      0.3333333333333333,
+      0.9
+    ],
+    "_values": [
+      {
+        "__type__": "cc.RealKeyframeValue",
+        "interpolationMode": 0,
+        "tangentWeightMode": 0,
+        "value": 1,
+        "rightTangent": 0,
+        "rightTangentWeight": 1,
+        "leftTangent": 0,
+        "leftTangentWeight": 1,
+        "easingMethod": 0,
+        "__editorExtras__": {
+          "tangentMode": 0
+        }
+      },
+      {
+        "__type__": "cc.RealKeyframeValue",
+        "interpolationMode": 0,
+        "tangentWeightMode": 0,
+        "value": 1.2000000476837158,
+        "rightTangent": 0,
+        "rightTangentWeight": 1,
+        "leftTangent": 0,
+        "leftTangentWeight": 1,
+        "easingMethod": 0,
+        "__editorExtras__": {
+          "tangentMode": 0
+        }
+      },
+      {
+        "__type__": "cc.RealKeyframeValue",
+        "interpolationMode": 0,
+        "tangentWeightMode": 0,
+        "value": 1,
+        "rightTangent": 0,
+        "rightTangentWeight": 1,
+        "leftTangent": 0,
+        "leftTangentWeight": 1,
+        "easingMethod": 0,
+        "__editorExtras__": {
+          "tangentMode": 0
+        }
+      }
+    ],
+    "preExtrapolation": 1,
+    "postExtrapolation": 1
+  },
+  {
+    "__type__": "cc.animation.Channel",
+    "_curve": {
+      "__id__": 11
+    }
+  },
+  {
+    "__type__": "cc.RealCurve",
+    "_times": [
+      0,
+      0.3333333333333333,
+      0.9
+    ],
+    "_values": [
+      {
+        "__type__": "cc.RealKeyframeValue",
+        "interpolationMode": 0,
+        "tangentWeightMode": 0,
+        "value": 1,
+        "rightTangent": 0,
+        "rightTangentWeight": 1,
+        "leftTangent": 0,
+        "leftTangentWeight": 1,
+        "easingMethod": 0,
+        "__editorExtras__": {
+          "tangentMode": 0
+        }
+      },
+      {
+        "__type__": "cc.RealKeyframeValue",
+        "interpolationMode": 0,
+        "tangentWeightMode": 0,
+        "value": 1.2000000476837158,
+        "rightTangent": 0,
+        "rightTangentWeight": 1,
+        "leftTangent": 0,
+        "leftTangentWeight": 1,
+        "easingMethod": 0,
+        "__editorExtras__": {
+          "tangentMode": 0
+        }
+      },
+      {
+        "__type__": "cc.RealKeyframeValue",
+        "interpolationMode": 0,
+        "tangentWeightMode": 0,
+        "value": 1,
+        "rightTangent": 0,
+        "rightTangentWeight": 1,
+        "leftTangent": 0,
+        "leftTangentWeight": 1,
+        "easingMethod": 0,
+        "__editorExtras__": {
+          "tangentMode": 0
+        }
+      }
+    ],
+    "preExtrapolation": 1,
+    "postExtrapolation": 1
+  },
+  {
+    "__type__": "cc.animation.Channel",
+    "_curve": {
+      "__id__": 13
+    }
+  },
+  {
+    "__type__": "cc.RealCurve",
+    "_times": [],
+    "_values": [],
+    "preExtrapolation": 1,
+    "postExtrapolation": 1
+  },
+  {
+    "__type__": "cc.animation.Channel",
+    "_curve": {
+      "__id__": 15
+    }
+  },
+  {
+    "__type__": "cc.RealCurve",
+    "_times": [],
+    "_values": [],
+    "preExtrapolation": 1,
+    "postExtrapolation": 1
   },
   {
     "__type__": "cc.AnimationClipAdditiveSettings",
