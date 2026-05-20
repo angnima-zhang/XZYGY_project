@@ -3680,9 +3680,9 @@
     "__prefab": null,
     "value_initialValue": 1000000,
     "value_initialPrice": 5,
-    "speed_initialValue": 2,
+    "speed_initialValue": 0.5,
     "speed_initialPrice": 5,
-    "lucky_initialValue": 50,
+    "lucky_initialValue": 100,
     "lucky_initialPrice": 5,
     "critical_initialValue": 100,
     "critical_initialPrice": 5,
@@ -3692,7 +3692,7 @@
     "pity_initialPrice": 5,
     "streakBonus_initialValue": 1,
     "streakBonus_initialPrice": 5,
-    "time_initialValue": 5,
+    "time_initialValue": 1,
     "time_initialPrice": 5,
     "global_growthFactor": 1.2,
     "flipDuration": 1.5,
@@ -4225,7 +4225,7 @@
         "__id__": 108
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 112
@@ -9060,7 +9060,7 @@
         "__id__": 229
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 232
@@ -12758,7 +12758,7 @@
         "__id__": 323
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 326
@@ -19726,7 +19726,7 @@
         "__id__": 500
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 503
@@ -21710,7 +21710,7 @@
         "__id__": 550
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 553
@@ -23697,7 +23697,7 @@
         "__id__": 603
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 606
@@ -25790,7 +25790,7 @@
         "__id__": 653
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 656
@@ -27774,7 +27774,7 @@
         "__id__": 703
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 706
@@ -29758,7 +29758,7 @@
         "__id__": 753
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 756
@@ -31742,7 +31742,7 @@
         "__id__": 803
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 806
@@ -33729,7 +33729,7 @@
         "__id__": 856
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 859
