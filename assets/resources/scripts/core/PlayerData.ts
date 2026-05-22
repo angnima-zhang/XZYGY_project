@@ -51,6 +51,8 @@ interface UpgradeConfig {
     growthFactor: number;
     /** 单位 */
     unit: string;
+    /** 价格增长系数 */
+    priceGrowthFactor: number;
 }
 
 /**
@@ -154,23 +156,26 @@ export class PlayerData {
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
-            unit: ''
+            unit: '',
+            priceGrowthFactor: 1.2
         },
         speed: {
             name: '速度',
-            initialValue: 5,
+            initialValue: 2,
             initialPrice: 5,
-            growthType: 'divide',
-            growthFactor: 1.2,
-            unit: '秒'
+            growthType: 'fixed',
+            growthFactor: -0.1,
+            unit: '秒',
+            priceGrowthFactor: 1.2
         },
         lucky: {
             name: '幸运',
             initialValue: 50,
             initialPrice: 5,
-            growthType: 'multiply',
-            growthFactor: 1.2,
-            unit: '%'
+            growthType: 'fixed',
+            growthFactor: 1,
+            unit: '%',
+            priceGrowthFactor: 1.2
         },
         critical: {
             name: '暴击率',
@@ -178,7 +183,8 @@ export class PlayerData {
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
-            unit: '%'
+            unit: '%',
+            priceGrowthFactor: 1.2
         },
         criticalBonus: {
             name: '暴击加成',
@@ -186,15 +192,17 @@ export class PlayerData {
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
-            unit: ''
+            unit: '',
+            priceGrowthFactor: 1.2
         },
         pity: {
             name: '保底',
             initialValue: 20,
             initialPrice: 5,
             growthType: 'fixed',
-            growthFactor: 1,
-            unit: '次'
+            growthFactor: -1,
+            unit: '次',
+            priceGrowthFactor: 1.2
         },
         streakBonus: {
             name: '连击加成',
@@ -202,7 +210,8 @@ export class PlayerData {
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
-            unit: ''
+            unit: '',
+            priceGrowthFactor: 1.2
         },
         time: {
             name: '自动时间',
@@ -210,7 +219,8 @@ export class PlayerData {
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
-            unit: '秒'
+            unit: '秒',
+            priceGrowthFactor: 1.2
         }
     };
 
@@ -344,7 +354,7 @@ export class PlayerData {
                 nextValue = Math.floor(currentValue / config.growthFactor * 100) / 100;
                 break;
             case 'fixed':
-                nextValue = currentValue - 1;
+                nextValue = currentValue + config.growthFactor;
                 break;
             default:
                 nextValue = currentValue;
@@ -368,7 +378,7 @@ export class PlayerData {
      */
     calculateNextPrice(type: UpgradeType): number {
         const currentPrice = this.getUpgradePrice(type);
-        return Math.ceil(currentPrice * 1.2);
+        return Math.ceil(currentPrice * this.UPGRADE_CONFIGS[type].priceGrowthFactor);
     }
 
     /**
@@ -420,20 +430,21 @@ export class PlayerData {
     /**
      * 设置升级项的初始值和初始价格（用于调试）
      */
-    setUpgradeConfig(type: UpgradeType, initialValue: number, initialPrice: number): void {
+    setUpgradeConfig(type: UpgradeType, initialValue: number, initialPrice: number, priceGrowthFactor: number): void {
         if (!this.UPGRADE_CONFIGS[type]) return;
         this.UPGRADE_CONFIGS[type].initialValue = initialValue;
         this.UPGRADE_CONFIGS[type].initialPrice = initialPrice;
+        this.UPGRADE_CONFIGS[type].priceGrowthFactor = priceGrowthFactor;
     }
 
     /**
      * 设置全局价格增长系数（用于调试）
      */
-    setGlobalGrowthFactor(factor: number): void {
-        (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
-            this.UPGRADE_CONFIGS[type].growthFactor = factor;
-        });
-    }
+    // setGlobalGrowthFactor(factor: number): void {
+    //     (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
+    //         this.UPGRADE_CONFIGS[type].growthFactor = factor;
+    //     });
+    // }
 
     /**
      * 应用调试配置到当前升级状态（将当前状态重置为配置中的初始值）

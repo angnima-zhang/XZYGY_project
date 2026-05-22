@@ -159,14 +159,30 @@ export class CoinController extends Component {
     private _coinSprite: Sprite | null = null;
 
     /**
-     * 硬币 Animation 组件引用（用于播放翻转动画）
+     * 硬币 Animation 组件引用（用于播放翻转动画，背面用）
      */
     private _coinAnimation: Animation | null = null;
+
+    /**
+     * 当前正在播放的翻转动画（背面用 Coin 的，正面用 Coin_front 的）
+     */
+    private _currentFlipAnimation: Animation | null = null;
+
+    /**
+     * 硬币正面 Animation 组件引用（用于播放正面翻转动画）
+     */
+    @property({ type: Animation, displayName: '正面硬币动画', tooltip: 'Coin_front 节点的 Animation 组件' })
+    coinFrontAnimation: Animation | null = null;
 
     /**
      * 动画名称（必须与 Animation 组件中的动画剪辑名称一致）
      */
     private readonly FLIP_ANIM_NAME = 'coin_flip';
+
+    /**
+     * 正面动画名称
+     */
+    private readonly FLIP_FRONT_ANIM_NAME = 'coin_flip_frontface';
 
     /**
      * 游戏管理器实例
@@ -276,10 +292,17 @@ export class CoinController extends Component {
         // 监听动画结束事件
         if (this._coinAnimation) {
             this._coinAnimation.on(Animation.EventType.FINISHED, this.onFlipAnimationFinished, this);
-            console.log('[CoinController] 已注册动画结束事件监听器');
+            console.log('[CoinController] 已注册 Coin 动画结束事件监听器');
+        }
+        if (this.coinFrontAnimation) {
+            this.coinFrontAnimation.on(Animation.EventType.FINISHED, this.onFlipAnimationFinished, this);
+            console.log('[CoinController] 已注册 Coin_front 动画结束事件监听器');
         }
 
         console.log('[CoinController] === onLoad 完成 ===');
+
+        // 初始化 UI 状态（隐藏自动、特效等）
+        this.resetUIState();
 
         // 预加载正面精灵帧
         this.preloadZhengmianFrames();
@@ -287,10 +310,9 @@ export class CoinController extends Component {
 
     /**
      * 组件启用时调用
-     * 重置 UI 状态
      */
     onEnable() {
-        this.resetUIState();
+        // 不调用 resetUIState，避免 active 切换触发无限递归
     }
 
     /**
@@ -307,6 +329,9 @@ export class CoinController extends Component {
         // 停止动画
         if (this._coinAnimation) {
             this._coinAnimation.off(Animation.EventType.FINISHED, this.onFlipAnimationFinished, this);
+        }
+        if (this.coinFrontAnimation) {
+            this.coinFrontAnimation.off(Animation.EventType.FINISHED, this.onFlipAnimationFinished, this);
         }
 
         // 移除事件监听
@@ -326,6 +351,9 @@ export class CoinController extends Component {
      * 硬币点击事件处理
      */
     private onCoinClick(): void {
+        console.log('[CoinController] === onCoinClick 被触发 ===');
+        console.log('[CoinController] _isAnimating:', this._isAnimating);
+        
         // 如果正在动画中，忽略点击
         if (this._isAnimating) {
             console.log('[CoinController] 正在动画中，忽略点击');
@@ -338,6 +366,7 @@ export class CoinController extends Component {
             return;
         }
 
+        console.log('[CoinController] 开始准备翻转结果...');
         // 播放点击音效
         this._vfxManager?.playCoinClick();
 
@@ -352,11 +381,20 @@ export class CoinController extends Component {
     /**
      * 播放抛硬币动画
      * 使用 Animation 组件播放翻转动画
+     * 正面使用 Coin_front 的 coin_flip_frontface 动画，背面使用 Coin 的 coin_flip 动画
      * @param pendingResult 预定的翻转结果，用于动态替换精灵帧
      */
     private playFlipAnimation(pendingResult: FlipResult | null): void {
-        console.log('[CoinController] === playFlipAnimation ===');
+        console.log('[CoinController] ================================');
+        console.log('[CoinController] === playFlipAnimation 被调用 ===');
+        console.log('[CoinController] ================================');
         console.log('[CoinController] 结果:', pendingResult?.isHead ? '正面' : '背面');
+        console.log('[CoinController] Coin node active:', this.node.active);
+        console.log('[CoinController] coinFrontAnimation 已绑定:', !!this.coinFrontAnimation);
+        if (this.coinFrontAnimation) {
+            console.log('[CoinController] Coin_front node active:', this.coinFrontAnimation.node.active);
+            console.log('[CoinController] Coin_front activeInHierarchy:', this.coinFrontAnimation.node.activeInHierarchy);
+        }
 
         this._flipFinishedHandled = false;
         this._isAnimating = true;
@@ -364,28 +402,61 @@ export class CoinController extends Component {
 
         this.unscheduleZhengmianTimer();
 
-        if (this._coinAnimation) {
-            this._coinAnimation.stop();
+        const isHead = pendingResult?.isHead ?? false;
+        const animDuration = this.getFlipDuration();
+        console.log('[CoinController] animDuration:', animDuration);
 
-            if (pendingResult?.isHead) {
-                this.scheduleZhengmianSwitch();
+        if (isHead && this.coinFrontAnimation) {
+            // 正面：播放 Coin_front 的动画
+            console.log('[CoinController] 走正面分支，使用 Coin_front 动画');
+            this._currentFlipAnimation = this.coinFrontAnimation;
+            
+            // 隐藏 Coin 的 Sprite，保持节点激活
+            if (this._coinSprite) {
+                this._coinSprite.enabled = false;
+                console.log('[CoinController] 隐藏 Coin Sprite');
             }
+            this.coinFrontAnimation.node.active = true;
+
+            this.coinFrontAnimation.stop();
+
+            console.log('[CoinController] 播放动画:', this.FLIP_FRONT_ANIM_NAME);
+            this.coinFrontAnimation.play(this.FLIP_FRONT_ANIM_NAME);
+
+            const animState = this.coinFrontAnimation.getState(this.FLIP_FRONT_ANIM_NAME);
+            if (animState) {
+                const speed = animState.duration / animDuration;
+                console.log('[CoinController] 正面动画 duration:', animState.duration, 'speed:', speed);
+                animState.speed = speed;
+            }
+
+            console.log('[CoinController] 正面动画已开始 (Coin_front)');
+        } else if (this._coinAnimation) {
+            // 背面：播放 Coin 的动画
+            console.log('[CoinController] 走背面分支，使用 Coin 动画');
+            this._currentFlipAnimation = this._coinAnimation;
+            
+            if (this._coinSprite) {
+                this._coinSprite.enabled = true;
+            }
+            if (this.coinFrontAnimation) {
+                this.coinFrontAnimation.node.active = false;
+            }
+
+            this._coinAnimation.stop();
 
             this._coinAnimation.play(this.FLIP_ANIM_NAME);
 
             const animState = this._coinAnimation.getState(this.FLIP_ANIM_NAME);
             if (animState) {
-                const speed = animState.duration / this.getFlipDuration();
+                const speed = animState.duration / animDuration;
+                console.log('[CoinController] 背面动画 duration:', animState.duration, 'speed:', speed);
                 animState.speed = speed;
             }
 
-            console.log('[CoinController] 动画已开始');
+            console.log('[CoinController] 背面动画已开始 (Coin)');
         } else {
-            const duration = this._gameManager.getAnimDuration();
-            tween(this.node)
-                .by(duration, { eulerAngles: new Vec3(0, 1800, 0) })
-                .call(() => this.onFlipAnimationFinished())
-                .start();
+            console.error('[CoinController] 没有可用的动画组件');
         }
     }
 
@@ -515,6 +586,13 @@ export class CoinController extends Component {
     private _flipFinishedHandled: boolean = false;
 
     private onFlipAnimationFinished(): void {
+        console.log('[CoinController] ================================');
+        console.log('[CoinController] === onFlipAnimationFinished 被调用 ===');
+        console.log('[CoinController] _flipFinishedHandled:', this._flipFinishedHandled);
+        console.log('[CoinController] _isAnimating:', this._isAnimating);
+        console.log('[CoinController] _currentFlipAnimation:', this._currentFlipAnimation?.node?.name);
+        console.log('[CoinController] ================================');
+
         // 防止重复触发
         if (this._flipFinishedHandled) {
             console.log('[CoinController] onFlipAnimationFinished 已处理过，跳过');
@@ -524,10 +602,11 @@ export class CoinController extends Component {
 
         this.unscheduleZhengmianTimer();
 
-        console.log('[CoinController] ================================');
-        console.log('[CoinController] === onFlipAnimationFinished 被调用 ===');
-        console.log('[CoinController] ================================');
         console.log('[CoinController] 翻转动画结束，调用 flipCoin');
+
+        // 恢复 Coin 可见性
+        if (this._coinSprite) this._coinSprite.enabled = true;
+        if (this.coinFrontAnimation) this.coinFrontAnimation.node.active = false;
 
         // 调用 GameManager 处理逻辑
         const result = this._gameManager.flipCoin();
@@ -545,10 +624,10 @@ export class CoinController extends Component {
     private recoverAnimationState(): void {
         console.log('[CoinController] 执行状态恢复');
         
-        // 恢复所有按钮
-        this.enableAllButtons();
+        if (this._coinSprite) this._coinSprite.enabled = true;
+        if (this.coinFrontAnimation) this.coinFrontAnimation.node.active = false;
 
-        // 重置动画状态
+        this.enableAllButtons();
         this._isAnimating = false;
         this._flipFinishedHandled = false;
     }
@@ -837,6 +916,8 @@ export class CoinController extends Component {
         if (this.criticalNode) this.criticalNode.active = false;
         if (this.pityNode) this.pityNode.active = false;
         if (this.autoingNode) this.autoingNode.active = false;
+        if (this.coinFrontAnimation) this.coinFrontAnimation.node.active = false;
+        if (!this.node.active) this.node.active = true;
     }
 
     /**

@@ -102,7 +102,13 @@ export class VfxController extends Component {
      * 开始循环播放（如果已在循环中则不重启动画）
      */
     playLooping(): void {
-        console.log(`[VfxController] playLooping 被调用, node=${this.node?.name}, animation=${!!this.animation}`);
+        console.log(`[VfxController] === playLooping 开始 ===`);
+        console.log(`[VfxController] node=${this.node?.name}`);
+        console.log(`[VfxController] node.active=${this.node?.active}`);
+        console.log(`[VfxController] animation=${!!this.animation}`);
+        console.log(`[VfxController] _isLooping=${this._isLooping}`);
+        console.log(`[VfxController] _isPlaying=${this._isPlaying}`);
+
         if (!this.animation) {
             console.warn('[VfxController] playLooping 失败: animation 为空');
             return;
@@ -119,7 +125,10 @@ export class VfxController extends Component {
         }
 
         const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
-        console.log(`[VfxController] playLooping: clipName='${clipName}'`);
+        console.log(`[VfxController] defaultClip=${this.animation.defaultClip?.name}`);
+        console.log(`[VfxController] clips.length=${this.animation.clips.length}`);
+        console.log(`[VfxController] clips=[${this.animation.clips.map(c => c.name).join(', ')}]`);
+        console.log(`[VfxController] clipName='${clipName}'`);
 
         if (!clipName) {
             console.warn('[VfxController] playLooping: 无可用动画');
@@ -131,28 +140,64 @@ export class VfxController extends Component {
         this._isPlaying = true;
         this._isLooping = true;
 
+        // 检查父节点状态
+        let parentActive = true;
+        let p = this.node.parent;
+        const parentChain: string[] = [];
+        while (p) {
+            parentChain.push(`${p.name}(active=${p.active})`);
+            if (!p.active) parentActive = false;
+            p = p.parent;
+        }
+        console.log(`[VfxController] 父节点链: ${parentChain.join(' -> ')}`);
+        console.log(`[VfxController] 节点激活后 self.active=${this.node.active}, 可渲染=${this.node.activeInHierarchy}`);
+
         // 设置循环模式到 clip
         for (const clip of this.animation.clips) {
             clip.wrapMode = 2;
         }
 
-        // 延迟一帧播放，确保节点激活后 Animation 组件完成初始化
-        this.scheduleOnce(() => {
-            if (!this.animation || !this._isLooping) return;
+        console.log(`[VfxController] 设置 scheduleOnce 延迟播放...`);
 
-            // 停止已有动画并重置状态
+        // 延迟一帧播放，确保 Animation 状态机完成初始化
+        this.scheduleOnce(() => {
+            console.log(`[VfxController] === scheduleOnce 回调执行 ===`);
+            console.log(`[VfxController] callback: animation=${!!this.animation}, _isLooping=${this._isLooping}`);
+
+            if (!this.animation || !this._isLooping) {
+                console.warn('[VfxController] callback: animation 为空或 _isLooping=false，跳过');
+                return;
+            }
+
+            const clipName = this.animation.defaultClip?.name ?? this.animation.clips[0].name;
+            console.log(`[VfxController] callback: clipName='${clipName}'`);
+            console.log(`[VfxController] callback: node.active=${this.node.active}, activeInHierarchy=${this.node.activeInHierarchy}`);
+
             this.animation.stop();
+            console.log(`[VfxController] callback: stop() 已调用`);
 
             // 获取或创建动画状态
             let state = this.animation.getState(clipName);
+            console.log(`[VfxController] callback: getState('${clipName}')=${state ? '存在' : 'null'}`);
+
             if (!state) {
-                state = this.animation.createState(this.animation.defaultClip ?? this.animation.clips[0], clipName);
+                const clip = this.animation.defaultClip ?? this.animation.clips[0];
+                state = this.animation.createState(clip, clipName);
+                console.log(`[VfxController] callback: 创建了 state '${clipName}'`);
             }
+
+            console.log(`[VfxController] callback: state.wrapMode=${state.wrapMode}, state.time=${state.time}, state.duration=${state.duration}`);
+
             state.wrapMode = 2;
             state.time = 0;
 
             this.animation.play(clipName);
-            console.log('[VfxController] playLooping: animation.play() 已调用');
+            console.log(`[VfxController] callback: play() 已调用`);
+
+            // 检查播放后状态
+            const checkState = this.animation.getState(clipName);
+            console.log(`[VfxController] callback: play后 state.isPlaying=${checkState?.isPlaying}, state.time=${checkState?.time}`);
+            console.log(`[VfxController] === playLooping 结束 ===`);
         }, 0);
     }
 
@@ -226,8 +271,6 @@ export class VfxController extends Component {
         } else {
             console.warn('[VfxController] 未找到 Animation 组件或默认动画剪辑');
         }
-
-        this.node.active = false;
     }
 
     onDestroy() {
