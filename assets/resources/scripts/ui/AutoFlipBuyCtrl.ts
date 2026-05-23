@@ -21,6 +21,7 @@ import { _decorator, Component, Node, Label, Button, Sprite, Color } from 'cc';
 import { GameManager } from '../core/GameManager';
 import { NumberFormatter } from '../utils/NumberFormatter';
 import { PlayerData } from '../core/PlayerData';
+import { AdManager } from './AdManager';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -176,12 +177,44 @@ export class AutoFlipBuyCtrl extends Component {
     }
 
     /**
-     * 广告按钮点击事件处理
-     * TODO: 接入微信小游戏广告 SDK
+     * 广告按钮点击事件处理（看广告免费自动翻转）
      */
     private onAdButtonClick(): void {
-        console.log('[AutoFlipBuyCtrl] 广告按钮点击，准备播放广告...');
-        // TODO: 实现广告播放逻辑
+        if (!this._gameManager) return;
+
+        // 检查是否已在自动翻转中
+        if (this._gameManager.isAutoFlipping()) {
+            console.warn('[AutoFlipBuyCtrl] 已经在自动翻转中，无法观看广告');
+            return;
+        }
+
+        // 检查是否达到升级上限
+        if (this._isUpgradeAtLimit()) {
+            console.log('[AutoFlipBuyCtrl] 已达升级上限，无法观看广告');
+            return;
+        }
+
+        const adManager = AdManager.getInstance();
+        if (!adManager) {
+            console.warn('[AutoFlipBuyCtrl] AdManager 未找到');
+            return;
+        }
+
+        console.log('[AutoFlipBuyCtrl] 广告按钮点击，展示激励视频广告...');
+
+        adManager.showRewardedAd((success: boolean) => {
+            if (success) {
+                // 用户看完了广告，发放自动翻转奖励
+                console.log('[AutoFlipBuyCtrl] 发放广告自动翻转奖励');
+                this._gameManager!.startAutoFlip();
+                this.refreshUI();
+            } else {
+                // 用户中途关闭，不发放奖励
+                console.log('[AutoFlipBuyCtrl] 用户未看完广告，不发放奖励');
+            }
+        }).catch((err: any) => {
+            console.error('[AutoFlipBuyCtrl] 广告展示失败:', err);
+        });
     }
 
     /**
