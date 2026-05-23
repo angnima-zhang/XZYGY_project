@@ -141,8 +141,8 @@ export class LoadingCtrl extends Component {
                 setTimeout(() => {
                     console.log('[LoadingCtrl] 加载完成，跳转到主场景');
                     director.loadScene('main');
-                }, 500);
+                }, 0);
             }
-        }, 30); // 每 30ms 更新一次，大约 3 秒完成加载
+        }, 1); // 每 30ms 更新一次，大约 3 秒完成加载
     }
 }
