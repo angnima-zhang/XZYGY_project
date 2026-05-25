@@ -666,6 +666,9 @@
     "criticalHitNode": {
       "__id__": 16
     },
+    "criticalHitNode2": {
+      "__id__": 17
+    },
     "criticalHitBonusLabel": {
       "__id__": 30
     },
@@ -3684,13 +3687,13 @@
     "value_initialValue": 1,
     "value_initialPrice": 1,
     "value_priceGrowthFactor": 3,
-    "speed_initialValue": 2,
+    "speed_initialValue": 0.5,
     "speed_initialPrice": 5,
     "speed_priceGrowthFactor": 3,
-    "lucky_initialValue": 50,
+    "lucky_initialValue": 100,
     "lucky_initialPrice": 5,
     "lucky_priceGrowthFactor": 5,
-    "critical_initialValue": 1,
+    "critical_initialValue": 100,
     "critical_initialPrice": 5,
     "critical_priceGrowthFactor": 4,
     "criticalBonus_initialValue": 1,
@@ -7554,7 +7557,7 @@
       "a": 150
     },
     "_spriteFrame": {
-      "__uuid__": "c12baacc-d77f-444d-b227-9986789b0886@f9941",
+      "__uuid__": "7d8f9b89-4fd1-4c9f-a3ab-38ec7cded7ca@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,
