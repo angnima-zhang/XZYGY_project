@@ -663,11 +663,11 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "criticalHitNode": {
+    "criticalVFXNode": {
       "__id__": 16
     },
     "criticalHitNode2": {
-      "__id__": 17
+      "__id__": 18
     },
     "criticalHitBonusLabel": {
       "__id__": 30
@@ -3693,7 +3693,7 @@
     "lucky_initialValue": 100,
     "lucky_initialPrice": 5,
     "lucky_priceGrowthFactor": 5,
-    "critical_initialValue": 100,
+    "critical_initialValue": 50,
     "critical_initialPrice": 5,
     "critical_priceGrowthFactor": 4,
     "criticalBonus_initialValue": 1,

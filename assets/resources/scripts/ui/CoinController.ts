@@ -52,10 +52,10 @@ export class CoinController extends Component {
      * 暴击特效节点（默认隐藏）
      */
     @property({ type: Node, displayName: '暴击特效节点', tooltip: 'criticalVFX 节点' })
-    criticalHitNode: Node | null = null;
+    criticalVFXNode: Node | null = null;
 
     /**
-     * 暴击特效节点（默认隐藏）
+     * 暴击文字节点（默认隐藏）
      */
     @property({ type: Node, displayName: '暴击文字节点', tooltip: 'criticalHit 节点' })
     criticalHitNode2: Node | null = null;
@@ -65,8 +65,6 @@ export class CoinController extends Component {
      */
     @property({ type: Label, displayName: '暴击bonus', tooltip: 'criticalHit/bonus 节点的 Label 组件' })
     criticalHitBonusLabel: Label | null = null;
-
-
 
     /**
      * 暴击计数节点
@@ -848,7 +846,7 @@ export class CoinController extends Component {
         if (!this.criticalHitNode2) return;
 
         // 暴击加成 > 0 时显示，否则隐藏
-        this.criticalHitNode.active = critBonus > 0;
+        this.criticalVFXNode.active = critBonus > 0;
         this.criticalHitNode2.active = critBonus > 0;
 
         // 更新 bonus（暴击加成）
@@ -856,16 +854,16 @@ export class CoinController extends Component {
             this.criticalHitBonusLabel.string = `+${this.formatNumber(critBonus)}`;
         }
 
-
-        // 暴击时播放缩放动画
+        // 暴击时播放 VFX 动画和缩放动画
         if (critBonus > 0) {
-            // 停止旧的 tween
-            // if (this._criticalHitScaleTween) {
-            //     this._criticalHitScaleTween.stop();
-            // }
+            // 播放 VFX 动画
+            const vfxController = this.criticalVFXNode?.getComponent('VfxController') as any;
+            if (vfxController && vfxController.play) {
+                vfxController.play();
+            }
 
+            // 播放文字缩放动画
             this.criticalHitNode2.setScale(new Vec3(1.2, 1.2, 1));
-            // this._criticalHitScaleTween = 
             tween(this.criticalHitNode2)
                 .to(0.2, { scale: new Vec3(1, 1, 1) })
                 .start();
@@ -935,6 +933,7 @@ export class CoinController extends Component {
      */
     private resetUIState(): void {
         if (this.criticalHitNode2) this.criticalHitNode2.active = false;
+        if (this.criticalVFXNode) this.criticalVFXNode.active = false;
         if (this.addScoreNode) this.addScoreNode.active = false;
         if (this.streakNode) this.streakNode.active = false;
         if (this.criticalNode) this.criticalNode.active = false;
