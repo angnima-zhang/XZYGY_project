@@ -15,7 +15,7 @@
  * 创建时间：2026-05-06
  */
 
-import { _decorator, Component, Node, ProgressBar, Label, director } from 'cc';
+import { _decorator, Component, Node, ProgressBar, Label, director, resources } from 'cc';
 
 // 解构装饰器，用于定义 CC 类和属性
 const { ccclass, property } = _decorator;
@@ -137,12 +137,22 @@ export class LoadingCtrl extends Component {
                 // 清除定时器
                 clearInterval(interval);
                 
-                // 延迟 500ms 后跳转到主场景
+                // 预加载 main 场景（提前加载场景资源，加快后续切换速度）
+                console.log('[LoadingCtrl] 开始预加载 main 场景...');
+                director.preloadScene('main', (error?: Error | null) => {
+                    if (error) {
+                        console.error('[LoadingCtrl] 预加载 main 场景失败:', error);
+                    } else {
+                        console.log('[LoadingCtrl] main 场景预加载完成');
+                    }
+                });
+
+                // 延迟 1 秒后切换到主场景
                 setTimeout(() => {
                     console.log('[LoadingCtrl] 加载完成，跳转到主场景');
                     director.loadScene('main');
-                }, 500);
+                }, 1);
             }
-        }, 30); // 每 30ms 更新一次，大约 3 秒完成加载
+        }, 10); // 每 30ms 更新一次，大约 3 秒完成加载
     }
 }

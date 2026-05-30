@@ -51,16 +51,20 @@ export class CoinController extends Component {
     /**
      * 暴击特效节点（默认隐藏）
      */
-    @property({ type: Node, displayName: '暴击特效节点', tooltip: 'criticalHit 节点' })
-    criticalHitNode: Node | null = null;
+    @property({ type: Node, displayName: '暴击特效节点', tooltip: 'criticalVFX 节点' })
+    criticalVFXNode: Node | null = null;
+
+    /**
+     * 暴击文字节点（默认隐藏）
+     */
+    @property({ type: Node, displayName: '暴击文字节点', tooltip: 'criticalHit 节点' })
+    criticalHitNode2: Node | null = null;
 
     /**
      * 暴击 bonus Label 节点
      */
     @property({ type: Label, displayName: '暴击bonus', tooltip: 'criticalHit/bonus 节点的 Label 组件' })
     criticalHitBonusLabel: Label | null = null;
-
-
 
     /**
      * 暴击计数节点
@@ -115,6 +119,16 @@ export class CoinController extends Component {
      */
     private _autoFlipStartCallback: ((duration: number) => void) | null = null;
     private _autoFlipStopCallback: (() => void) | null = null;
+
+    /**
+     * 暴击特效 Tween 引用（用于停止旧动画）
+     */
+    private _criticalHitScaleTween: Tween<Node> | null = null;
+
+    /**
+     * 当前暴击计数显示
+     */
+    private _currentCritHitDisplay: number = 0;
 
     /**
      * 自动翻转倒计时
@@ -659,9 +673,15 @@ export class CoinController extends Component {
         }
 
         // 显示暴击特效
+        // const critBonus = result.isCrit ? this._gameManager.getUpgradeValue('criticalBonus') : 0;
+        // this.updateCriticalHitDisplay(critBonus);
+
         if (result.isCrit) {
             const critBonus = this._gameManager.getUpgradeValue('criticalBonus');
-            this.showCriticalEffect(critBonus);
+            this.updateCriticalHitDisplay(critBonus);
+        }
+        else {
+            this._hideCriticalEffect();
         }
 
         // 更新连击显示
@@ -819,39 +839,41 @@ export class CoinController extends Component {
     }
 
     /**
-     * 显示暴击特效
+     * 更新暴击显示
      * @param critBonus 暴击加成
      */
-    private showCriticalEffect(critBonus: number): void {
-        if (!this.criticalHitNode) return;
+    private updateCriticalHitDisplay(critBonus: number): void {
+        if (!this.criticalHitNode2) return;
 
-        this.criticalHitNode.active = true;
+        // 暴击加成 > 0 时显示，否则隐藏
+        this.criticalVFXNode.active = critBonus > 0;
+        this.criticalHitNode2.active = critBonus > 0;
 
+        // 更新 bonus（暴击加成）
         if (this.criticalHitBonusLabel) {
             this.criticalHitBonusLabel.string = `+${this.formatNumber(critBonus)}`;
         }
 
-        let opacity = this.criticalHitNode.getComponent(UIOpacity);
-        if (!opacity) {
-            opacity = this.criticalHitNode.addComponent(UIOpacity);
+        // 暴击时播放 VFX 动画和缩放动画
+        if (critBonus > 0) {
+            // 播放 VFX 动画
+            const vfxController = this.criticalVFXNode?.getComponent('VfxController') as any;
+            if (vfxController && vfxController.play) {
+                vfxController.play();
+            }
+
+            // 播放文字缩放动画
+            this.criticalHitNode2.setScale(new Vec3(1.2, 1.2, 1));
+            tween(this.criticalHitNode2)
+                .to(0.2, { scale: new Vec3(1, 1, 1) })
+                .start();
         }
-        opacity.opacity = 255;
+    }
 
-        // 播放出现动画（放大 + 淡出）
-        this.criticalHitNode.setScale(new Vec3(0.5, 0.5, 1));
-
-        tween(this.criticalHitNode)
-            .to(0.3, { scale: new Vec3(1.2, 1.2, 1) })
-            .to(0.2, { scale: new Vec3(1, 1, 1) })
-            .start();
-
-        tween(opacity)
-            .delay(1.0)
-            .to(0.5, { opacity: 0 })
-            .call(() => {
-                this.criticalHitNode.active = false;
-            })
-            .start();
+    private _hideCriticalEffect(): void {
+        if (this.criticalHitNode2) {
+            this.criticalHitNode2.active = false;
+        }
     }
 
     /**
@@ -910,7 +932,8 @@ export class CoinController extends Component {
      * 重置 UI 状态
      */
     private resetUIState(): void {
-        if (this.criticalHitNode) this.criticalHitNode.active = false;
+        if (this.criticalHitNode2) this.criticalHitNode2.active = false;
+        if (this.criticalVFXNode) this.criticalVFXNode.active = false;
         if (this.addScoreNode) this.addScoreNode.active = false;
         if (this.streakNode) this.streakNode.active = false;
         if (this.criticalNode) this.criticalNode.active = false;

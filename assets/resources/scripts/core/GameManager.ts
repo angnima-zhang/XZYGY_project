@@ -609,7 +609,7 @@ export class GameManager {
     }
 
     /**
-     * 购买升级项
+     * 购买升级项（扣除余额）
      * @param type 升级项类型
      * @returns 是否购买成功
      */
@@ -620,6 +620,24 @@ export class GameManager {
             // 触发升级 VFX + 音效
             this._vfxManager?.playUpgrade(type);
             // 通知余额变更
+            this.notifyBalanceChange();
+        }
+        
+        return success;
+    }
+
+    /**
+     * 免费升级（不扣除余额，用于广告升级）
+     * @param type 升级项类型
+     * @returns 是否升级成功
+     */
+    buyUpgradeByAd(type: UpgradeType): boolean {
+        const success = this._playerData.doFreeUpgrade(type);
+        
+        if (success) {
+            // 触发升级 VFX + 音效
+            this._vfxManager?.playUpgrade(type);
+            // 通知余额变更（价格已更新）
             this.notifyBalanceChange();
         }
         

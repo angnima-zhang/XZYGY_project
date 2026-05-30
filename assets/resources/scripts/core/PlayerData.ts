@@ -425,6 +425,44 @@ export class PlayerData {
         return true;
     }
 
+    /**
+     * 执行免费升级（不扣除余额，只更新数值和价格）
+     * 用于广告升级等免费升级场景
+     * @param type 升级项类型
+     * @returns 是否升级成功
+     */
+    doFreeUpgrade(type: UpgradeType): boolean {
+        const currentValue = this.getUpgradeValue(type);
+        const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
+        const maxValue = PlayerData.UPGRADE_MAX_VALUE[type];
+
+        // 检查是否已达上限/下限
+        if (minValue > 0 && currentValue <= minValue) {
+            console.log(`[PlayerData] ${type} 已达最小值限制: ${currentValue} <= ${minValue}`);
+            return false;
+        }
+        if (maxValue > 0 && currentValue >= maxValue) {
+            console.log(`[PlayerData] ${type} 已达最大值限制: ${currentValue} >= ${maxValue}`);
+            return false;
+        }
+
+        // 计算新数值和新价格
+        const newValue = this.calculateNextValue(type);
+        const newPrice = this.calculateNextPrice(type);
+        const currentLevel = this.getUpgradeLevel(type);
+
+        // 更新升级状态
+        this._upgrades[type] = {
+            value: newValue,
+            price: newPrice,
+            level: currentLevel + 1
+        };
+
+        console.log(`[PlayerData] 免费升级成功: ${this.UPGRADE_CONFIGS[type].name} ${this.getUpgradeValue(type)} -> ${newValue}`);
+        this.save();
+        return true;
+    }
+
     // ==================== 调试配置相关 ====================
 
     /**

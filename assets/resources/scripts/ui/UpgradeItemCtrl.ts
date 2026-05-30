@@ -34,6 +34,7 @@ import { GameManager } from '../core/GameManager';
 import { UpgradeType } from '../core/PlayerData';
 import { PlayerData } from '../core/PlayerData';
 import { NumberFormatter } from '../utils/NumberFormatter';
+import { AdManager } from './AdManager';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -227,11 +228,39 @@ export class UpgradeItemCtrl extends Component {
 
     /**
      * 广告按钮点击事件处理（看广告免费升级）
-     * TODO: 接入微信小游戏广告 SDK
      */
     private onAdButtonClick(): void {
-        console.log(`[UpgradeItemCtrl] 广告按钮点击，准备播放广告...`);
-        // TODO: 实现广告播放逻辑
+        if (!this._gameManager) return;
+
+        // 检查是否达到升级上限
+        if (this._isUpgradeAtLimit()) {
+            console.log(`[UpgradeItemCtrl] 已达升级上限，无法观看广告`);
+            return;
+        }
+
+        const adManager = AdManager.getInstance();
+        if (!adManager) {
+            console.warn('[UpgradeItemCtrl] AdManager 未找到');
+            return;
+        }
+
+        console.log(`[UpgradeItemCtrl] 广告按钮点击，展示激励视频广告...`);
+
+        adManager.showRewardedAd((success: boolean) => {
+            if (success) {
+                // 用户看完了广告，免费升级
+                console.log(`[UpgradeItemCtrl] 发放广告升级奖励: ${this.upgradeType}`);
+                const upgradeSuccess = this._gameManager!.buyUpgradeByAd(this.upgradeType);
+                if (upgradeSuccess) {
+                    this.refreshUI();
+                }
+            } else {
+                // 用户中途关闭，不发放奖励
+                console.log('[UpgradeItemCtrl] 用户未看完广告，不发放奖励');
+            }
+        }).catch((err: any) => {
+            console.error('[UpgradeItemCtrl] 广告展示失败:', err);
+        });
     }
 
     /**
