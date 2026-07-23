@@ -439,19 +439,23 @@ export class CoinController extends Component {
                 this._coinSprite.enabled = false;
                 console.log('[CoinController] 隐藏 Coin Sprite');
             }
-            this.coinFrontAnimation.node.active = true;
 
+            // Coin_front 上次播放后停留在最后一帧。先在隐藏状态下采样到第一帧，
+            // 再显示节点，避免自动翻转“背面 -> 正面”时闪出上一轮的末帧。
             this.coinFrontAnimation.stop();
-
-            console.log('[CoinController] 播放动画:', this.FLIP_FRONT_ANIM_NAME);
-            this.coinFrontAnimation.play(this.FLIP_FRONT_ANIM_NAME);
-
             const animState = this.coinFrontAnimation.getState(this.FLIP_FRONT_ANIM_NAME);
             if (animState) {
+                animState.setTime(0);
+                animState.sample();
+
                 const speed = animState.duration / animDuration;
                 console.log('[CoinController] 正面动画 duration:', animState.duration, 'speed:', speed);
                 animState.speed = speed;
             }
+
+            this.coinFrontAnimation.node.active = true;
+            console.log('[CoinController] 播放动画:', this.FLIP_FRONT_ANIM_NAME);
+            this.coinFrontAnimation.play(this.FLIP_FRONT_ANIM_NAME);
 
             console.log('[CoinController] 正面动画已开始 (Coin_front)');
             return true;
