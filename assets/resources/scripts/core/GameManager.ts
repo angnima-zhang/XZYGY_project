@@ -56,6 +56,8 @@ type AutoFlipStopCallback = () => void;
 
 type AutoFlipTickCallback = (remaining: number) => void;
 
+type AutoFlipRequestCallback = () => void;
+
 export class GameManager {
     /** 单例实例 */
     private static _instance: GameManager | null = null;
@@ -88,6 +90,9 @@ export class GameManager {
 
     /** 自动翻转每秒心跳回调列表 */
     private _autoFlipTickCallbacks: AutoFlipTickCallback[] = [];
+
+    /** 自动翻转请求回调列表（由显示层按预定结果播放动画后再结算） */
+    private _autoFlipRequestCallbacks: AutoFlipRequestCallback[] = [];
 
     /** 是否正在翻转中（防止动画期间重复点击） */
     private _isFlipping: boolean = false;
@@ -218,6 +223,19 @@ export class GameManager {
         }
     }
 
+    /** 注册一次自动翻转请求回调 */
+    onAutoFlipRequest(callback: AutoFlipRequestCallback): void {
+        this._autoFlipRequestCallbacks.push(callback);
+    }
+
+    /** 移除一次自动翻转请求回调 */
+    offAutoFlipRequest(callback: AutoFlipRequestCallback): void {
+        const index = this._autoFlipRequestCallbacks.indexOf(callback);
+        if (index >= 0) {
+            this._autoFlipRequestCallbacks.splice(index, 1);
+        }
+    }
+
     /**
      * 通知自动翻转开始
      */
@@ -242,6 +260,13 @@ export class GameManager {
     private notifyAutoFlipTick(remaining: number): void {
         for (const callback of this._autoFlipTickCallbacks) {
             callback(remaining);
+        }
+    }
+
+    /** 请求显示层开始一次自动翻转动画 */
+    private notifyAutoFlipRequest(): void {
+        for (const callback of this._autoFlipRequestCallbacks) {
+            callback();
         }
     }
 
@@ -742,9 +767,8 @@ export class GameManager {
                 return;
             }
 
-            // 先准备结果，再执行翻转
-            this.prepareFlip();
-            this.flipCoin();
+            // 请求显示层先播放与预定结果一致的动画，动画结束后再结算。
+            this.notifyAutoFlipRequest();
 
             this._autoFlipAccumulatedTime += this.getAnimDuration();
 
@@ -758,9 +782,8 @@ export class GameManager {
             }
         }, intervalMs);
 
-        // 立即执行第一次翻转
-        this.prepareFlip();
-        this.flipCoin();
+        // 立即请求第一次翻转
+        this.notifyAutoFlipRequest();
     }
 
     /**

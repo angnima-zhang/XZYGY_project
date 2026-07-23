@@ -1,8 +1,8 @@
 /**
- * AdManager - 微信小游戏广告管理器
+ * AdManager - 小游戏广告管理器
  * 
  * 功能说明：
- * - 管理微信激励视频广告的全生命周期
+ * - 分别管理 TapTap、微信激励视频广告的全生命周期
  * - 提供单例访问方式
  * - 处理广告加载、展示、关闭事件
  * - 支持测试模式（未开通流量主时使用）
@@ -13,14 +13,15 @@
  * 3. 其他组件通过 AdManager.getInstance() 获取实例
  * 
  * 测试模式：
- * - showRewardedAd() 在未开通流量主时会自动走测试逻辑
- * - 测试模式下直接模拟广告播放成功，发放奖励
+ * - 仅供编辑器预览或微信测试配置使用
+ * - 正式环境未检测到广告 API 时不会模拟成功或发放奖励
  * 
  * 作者：Trae AI
  * 创建时间：2026-05-20
  */
 
 import { _decorator, Component, Node } from 'cc';
+import { EDITOR, PREVIEW } from 'cc/env';
 
 const { ccclass, property } = _decorator;
 
@@ -41,13 +42,24 @@ export class AdManager extends Component {
     rewardedAdUnitId: string = 'adunit-xxxxxxxxxxxxxxxx';
 
     /**
+     * TapTap 激励视频推广位ID
+     * 在 Dirichlet 媒体管理平台创建推广位后获取
+     */
+    @property({
+        displayName: 'TapTap激励视频推广位ID',
+        tooltip: 'Dirichlet推广位ID，对应tap.createRewardedVideoAd的adUnitId'
+    })
+    tapRewardedAdUnitId: string = '1059595';
+
+    /**
      * 是否使用测试模式
      * true: 模拟广告播放，直接发放奖励（未开通流量主时使用）
      * false: 调用真实微信广告SDK
+     * TapTap 推广位始终调用真实 tap API，不受此开关影响
      */
     @property({
-        displayName: '测试模式',
-        tooltip: '勾选后模拟广告播放，直接发放奖励'
+        displayName: '微信/编辑器模拟模式',
+        tooltip: '勾选后微信或编辑器模拟广告；TapTap推广位仍调用真实tap API'
     })
     testMode: boolean = true;
 
@@ -56,6 +68,7 @@ export class AdManager extends Component {
     private rewardedVideoAd: any = null;
     private _isAdReady: boolean = false;
     private _isPlaying: boolean = false;
+    private _isTestModeActive: boolean = false;
     private _onRewardCallback: ((success: boolean) => void) | null = null;
 
     /** 广告是否已就绪（可以展示） */
@@ -79,12 +92,42 @@ export class AdManager extends Component {
             return;
         }
         AdManager._instance = this;
+    }
 
-        if (this.testMode) {
-            console.log('[AdManager] 初始化完成（测试模式）');
-        } else {
-            this.initRewardedVideoAd();
+    start(): void {
+        this.initializePlatformAd();
+    }
+
+    private initializePlatformAd(): void {
+        const runtime = globalThis as any;
+
+        // TapTap 小游戏可能同时提供 wx 兼容层，因此必须优先判断 tap。
+        if (runtime.tap) {
+            this.initRewardedVideoAd(runtime.tap, this.tapRewardedAdUnitId, 'TapTap');
+            return;
         }
+
+        // 微信小游戏继续沿用原有的模拟模式开关，不影响微信现有配置。
+        if (runtime.wx) {
+            if (this.testMode) {
+                this._isTestModeActive = true;
+                console.log('[AdManager] 初始化完成（微信模拟模式）');
+                return;
+            }
+
+            this.initRewardedVideoAd(runtime.wx, this.rewardedAdUnitId, '微信');
+            return;
+        }
+
+        // 只有编辑器/预览环境允许在没有平台 API 时模拟成功。
+        if ((EDITOR || PREVIEW) && this.testMode) {
+            this._isTestModeActive = true;
+            console.log('[AdManager] 初始化完成（编辑器模拟模式）');
+            return;
+        }
+
+        this._isTestModeActive = false;
+        console.error('[AdManager] 正式环境未检测到广告 API，已禁用模拟奖励');
     }
 
     onDestroy() {
@@ -97,22 +140,21 @@ export class AdManager extends Component {
     /**
      * 初始化激励视频广告
      */
-    private initRewardedVideoAd() {
-        // 检查微信环境
-        if (typeof wx === 'undefined') {
-            console.warn('[AdManager] 当前环境不是微信小游戏，无法使用广告功能');
+    private initRewardedVideoAd(adApi: any, adUnitId: string, platformName: string) {
+        if (!adApi) {
+            console.warn(`[AdManager] 当前环境不支持${platformName}广告功能`);
             return;
         }
 
-        if (!wx.createRewardedVideoAd) {
-            console.warn('[AdManager] 当前微信版本不支持激励视频广告');
+        if (!adApi.createRewardedVideoAd) {
+            console.warn(`[AdManager] 当前${platformName}版本不支持激励视频广告`);
             return;
         }
 
         try {
             // 创建广告实例（全局单例）
-            this.rewardedVideoAd = wx.createRewardedVideoAd({
-                adUnitId: this.rewardedAdUnitId
+            this.rewardedVideoAd = adApi.createRewardedVideoAd({
+                adUnitId
             });
 
             if (!this.rewardedVideoAd) {
@@ -122,29 +164,27 @@ export class AdManager extends Component {
 
             // 监听加载成功
             this.rewardedVideoAd.onLoad(() => {
-                console.log('[AdManager] 激励视频广告加载成功');
+                console.log(`[AdManager] ${platformName}激励视频广告加载成功`);
                 this._isAdReady = true;
             });
 
             // 监听加载失败
             this.rewardedVideoAd.onError((err: any) => {
-                console.error('[AdManager] 激励视频广告加载失败:', err);
+                console.error(`[AdManager] ${platformName}激励视频广告加载失败:`, err);
                 this._isAdReady = false;
             });
 
             // 监听用户关闭广告
             this.rewardedVideoAd.onClose((res: any) => {
-                console.log('[AdManager] 用户关闭广告, isEnded:', res.isEnded);
+                const isEnded = res?.isEnded === true;
+                console.log(`[AdManager] 用户关闭${platformName}广告, isEnded:`, isEnded);
                 this._isPlaying = false;
                 this._isAdReady = false;
 
-                if (res.isEnded) {
+                if (isEnded) {
                     // 用户看完了广告
                     console.log('[AdManager] 用户看完了广告，发放奖励');
                     this._onRewardCallback?.(true);
-
-                    // 预加载下一条广告
-                    this.loadAd();
                 } else {
                     // 用户中途关闭
                     console.log('[AdManager] 用户中途关闭了广告，不发放奖励');
@@ -155,12 +195,12 @@ export class AdManager extends Component {
             });
 
             // 预加载广告
-            this.loadAd();
+            void this.loadAd().catch(() => undefined);
 
-            console.log('[AdManager] 激励视频广告初始化完成');
+            console.log(`[AdManager] ${platformName}激励视频广告初始化完成`);
 
         } catch (e) {
-            console.error('[AdManager] 初始化广告失败:', e);
+            console.error(`[AdManager] 初始化${platformName}广告失败:`, e);
         }
     }
 
@@ -188,8 +228,17 @@ export class AdManager extends Component {
      * @returns Promise，展示成功或失败
      */
     showRewardedAd(onReward?: (success: boolean) => void): Promise<void> {
+        // TapTap API 可能晚于场景 onLoad 注入，用户点击时再检查一次。
+        if (!this.rewardedVideoAd) {
+            const tapApi = (globalThis as any).tap;
+            if (tapApi) {
+                this._isTestModeActive = false;
+                this.initRewardedVideoAd(tapApi, this.tapRewardedAdUnitId, 'TapTap');
+            }
+        }
+
         // 测试模式：直接模拟成功
-        if (this.testMode) {
+        if (this._isTestModeActive) {
             return this.showTestAd(onReward);
         }
 

@@ -26,7 +26,7 @@
  * audio.playBGM();    // 播放背景音乐
  */
 
-import { AudioSource, AudioClip, Node, resources } from 'cc';
+import { AudioSource, AudioClip, Node, resources, game, Game } from 'cc';
 
 /**
  * 音效类型枚举
@@ -117,10 +117,31 @@ export class AudioManager {
     /** BGM 是否等待用户交互后才播放（浏览器自动播放限制） */
     private _bgmPendingInteraction: boolean = false;
 
+    /** 回到前台后的 BGM 兜底恢复定时器 */
+    private _bgmRecoveryTimer: ReturnType<typeof setTimeout> | null = null;
+
     /** 私有构造函数 */
     private constructor() {
         this.loadSettings();
         this.initAudioSources();
+        game.on(Game.EVENT_SHOW, this.onGameShow, this);
+    }
+
+    /** Cocos 先自动恢复被系统打断的音频；下一个任务再检查并兜底续播。 */
+    private onGameShow(): void {
+        if (this._bgmRecoveryTimer !== null) {
+            clearTimeout(this._bgmRecoveryTimer);
+        }
+
+        this._bgmRecoveryTimer = setTimeout(() => {
+            this._bgmRecoveryTimer = null;
+            if (this._bgmEnabled
+                && this._bgmCache.loaded
+                && this._bgmSource?.clip
+                && !this._bgmSource.playing) {
+                this.playBGM();
+            }
+        }, 0);
     }
 
     /**
@@ -434,6 +455,12 @@ export class AudioManager {
      * 释放所有音频资源
      */
     destroy(): void {
+        game.off(Game.EVENT_SHOW, this.onGameShow, this);
+        if (this._bgmRecoveryTimer !== null) {
+            clearTimeout(this._bgmRecoveryTimer);
+            this._bgmRecoveryTimer = null;
+        }
+
         this.stopBGM();
         
         if (this._soundSource) {

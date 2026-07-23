@@ -22,6 +22,7 @@ import { VfxManager } from './ui/VfxManager';
 import { UpgradePageCtrl } from './ui/UpgradePageCtrl';
 import { StatusPageCtrl } from './ui/StatusPageCtrl';
 import { SettingPopupCtrl } from './ui/SettingPopupCtrl';
+import { TapCloudSave } from './core/TapCloudSave';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -91,6 +92,9 @@ export class MainSceneController extends Component {
      */
     onLoad() {
         log('[MainSceneController] 开始初始化主场景...');
+
+        // 启动页已负责必要的云端恢复；这里初始化完整同步器，供后续本地保存触发云端上传。
+        void TapCloudSave.restoreBeforeGame();
 
         // 1. 初始化音效管理器
         this._audioManager = AudioManager.getInstance();

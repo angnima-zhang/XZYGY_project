@@ -133,6 +133,11 @@ function handleGameConfig(targetFolder, gameVersion) {
         config.deviceOrientation = config.orientation;
         delete config.orientation;
     }
+    // TapTap 官方字段为 subPackages；兼容 Cocos 微信构建产物的小写写法。
+    if (!config.subPackages && Array.isArray(config.subpackages)) {
+        config.subPackages = config.subpackages;
+    }
+    delete config.subpackages;
     // 写回配置
     fs.writeJsonSync(configPath, config, { spaces: 2, encoding: 'utf-8' });
     console.log('[Tap小游戏] 游戏配置:');
@@ -141,6 +146,26 @@ function handleGameConfig(targetFolder, gameVersion) {
     console.log('  productVersion:', config.productVersion);
     console.log('[Tap小游戏] ✓ 配置处理完成');
     return config;
+}
+/**
+ * TapTap 启动时不要预加载 resources 大分包。
+ * 仅修改 TapBuild 复制品，不会改变原微信小游戏构建目录。
+ */
+function handleCocosSettings(targetFolder) {
+    const settingsPath = path.join(targetFolder, 'src', 'settings.json');
+    if (!fs.existsSync(settingsPath)) {
+        console.log('[Tap小游戏] - 未找到 src/settings.json，跳过启动分包配置');
+        return;
+    }
+    const settings = fs.readJsonSync(settingsPath);
+    const preloadBundles = settings.assets && settings.assets.preloadBundles;
+    if (!Array.isArray(preloadBundles)) {
+        console.log('[Tap小游戏] - 未找到 preloadBundles，跳过启动分包配置');
+        return;
+    }
+    settings.assets.preloadBundles = preloadBundles.filter(item => item && item.bundle !== 'resources');
+    fs.writeJsonSync(settingsPath, settings, { spaces: 0, encoding: 'utf-8' });
+    console.log('[Tap小游戏] ✓ resources 已改为启动后按需加载');
 }
 /**
  * 步骤5: 复制插件文件
@@ -547,6 +572,7 @@ async function convertWechatToTap(options) {
         console.log('[Tap小游戏] 步骤4: 处理game.json配置');
         console.log('========================================');
         const config = handleGameConfig(targetFolder, options.gameVersion);
+        handleCocosSettings(targetFolder);
         // 5. 复制插件
         console.log('\n========================================');
         console.log('[Tap小游戏] 步骤5: 注入插件');
