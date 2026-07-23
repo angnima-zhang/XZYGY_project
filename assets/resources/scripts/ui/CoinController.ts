@@ -119,6 +119,10 @@ export class CoinController extends Component {
      */
     private _autoFlipStartCallback: ((duration: number) => void) | null = null;
     private _autoFlipStopCallback: (() => void) | null = null;
+    private _autoFlipRequestCallback: (() => void) | null = null;
+
+    /** 自动翻转请求到达时若上一段动画尚未结束，暂存到动画结束后执行 */
+    private _autoFlipRequestPending: boolean = false;
 
     /**
      * 暴击特效 Tween 引用（用于停止旧动画）
@@ -297,8 +301,10 @@ export class CoinController extends Component {
         // 注册自动翻转回调
         this._autoFlipStartCallback = this._onAutoFlipStart.bind(this);
         this._autoFlipStopCallback = this._onAutoFlipStop.bind(this);
+        this._autoFlipRequestCallback = this._onAutoFlipRequest.bind(this);
         this._gameManager.onAutoFlipStart(this._autoFlipStartCallback);
         this._gameManager.onAutoFlipStop(this._autoFlipStopCallback);
+        this._gameManager.onAutoFlipRequest(this._autoFlipRequestCallback);
 
         // 绑定硬币点击事件
         this.node.on(Node.EventType.TOUCH_END, this.onCoinClick, this);
@@ -358,6 +364,9 @@ export class CoinController extends Component {
         if (this._autoFlipStopCallback) {
             this._gameManager?.offAutoFlipStop(this._autoFlipStopCallback);
         }
+        if (this._autoFlipRequestCallback) {
+            this._gameManager?.offAutoFlipRequest(this._autoFlipRequestCallback);
+        }
         this.node.off(Node.EventType.TOUCH_END, this.onCoinClick, this);
     }
 
@@ -396,9 +405,9 @@ export class CoinController extends Component {
      * 播放抛硬币动画
      * 使用 Animation 组件播放翻转动画
      * 正面使用 Coin_front 的 coin_flip_frontface 动画，背面使用 Coin 的 coin_flip 动画
-     * @param pendingResult 预定的翻转结果，用于动态替换精灵帧
+     * @param pendingResult 本次动画对应的翻转结果
      */
-    private playFlipAnimation(pendingResult: FlipResult | null): void {
+    private playFlipAnimation(pendingResult: FlipResult | null): boolean {
         console.log('[CoinController] ================================');
         console.log('[CoinController] === playFlipAnimation 被调用 ===');
         console.log('[CoinController] ================================');
@@ -445,6 +454,7 @@ export class CoinController extends Component {
             }
 
             console.log('[CoinController] 正面动画已开始 (Coin_front)');
+            return true;
         } else if (this._coinAnimation) {
             // 背面：播放 Coin 的动画
             console.log('[CoinController] 走背面分支，使用 Coin 动画');
@@ -469,8 +479,11 @@ export class CoinController extends Component {
             }
 
             console.log('[CoinController] 背面动画已开始 (Coin)');
+            return true;
         } else {
             console.error('[CoinController] 没有可用的动画组件');
+            this.recoverAnimationState();
+            return false;
         }
     }
 
@@ -630,6 +643,12 @@ export class CoinController extends Component {
             console.warn('[CoinController] flipCoin 返回 null，手动恢复动画状态');
             this.recoverAnimationState();
         }
+
+        // 同一时刻到达的下一次自动翻转请求，等本次结果和动画完全结束后再开始。
+        if (this._autoFlipRequestPending && this._gameManager.isAutoFlipping()) {
+            this._autoFlipRequestPending = false;
+            this._onAutoFlipRequest();
+        }
     }
 
     /**
@@ -657,12 +676,6 @@ export class CoinController extends Component {
         console.log('[CoinController] 翻转结果:', JSON.stringify(result));
         
         if (!result) return;
-
-        // 自动翻转状态下播放硬币动画
-        if (this._gameManager.isAutoFlipping() && !this._isAnimating) {
-            console.log('[CoinController] 自动翻转中，播放硬币动画');
-            this.playFlipAnimation(result);
-        }
 
         // 更新 UI 显示
         this.updateUI(result);
@@ -845,8 +858,7 @@ export class CoinController extends Component {
     private updateCriticalHitDisplay(critBonus: number): void {
         if (!this.criticalHitNode2) return;
 
-        // 暴击加成 > 0 时显示，否则隐藏
-        this.criticalVFXNode.active = critBonus > 0;
+        // 暴击加成 > 0 时显示文字；动画由 VfxManager 统一播放和隐藏
         this.criticalHitNode2.active = critBonus > 0;
 
         // 更新 bonus（暴击加成）
@@ -854,14 +866,8 @@ export class CoinController extends Component {
             this.criticalHitBonusLabel.string = `+${this.formatNumber(critBonus)}`;
         }
 
-        // 暴击时播放 VFX 动画和缩放动画
+        // 暴击时播放文字缩放动画
         if (critBonus > 0) {
-            // 播放 VFX 动画
-            const vfxController = this.criticalVFXNode?.getComponent('VfxController') as any;
-            if (vfxController && vfxController.play) {
-                vfxController.play();
-            }
-
             // 播放文字缩放动画
             this.criticalHitNode2.setScale(new Vec3(1.2, 1.2, 1));
             tween(this.criticalHitNode2)
@@ -964,11 +970,28 @@ export class CoinController extends Component {
      */
     private _onAutoFlipStop(): void {
         console.log('[CoinController] 自动翻转停止');
+        this._autoFlipRequestPending = false;
         this._autoFlipRemaining = 0;
         this._autoFlipCountdownTimer = 0;
         if (this.autoingNode) {
             this.autoingNode.active = false;
         }
+    }
+
+    /**
+     * 自动翻转请求：与手动翻转保持同一流程，先预定结果并播放对应动画，再在动画结束时结算。
+     */
+    private _onAutoFlipRequest(): void {
+        if (!this._gameManager?.isAutoFlipping()) return;
+
+        if (this._isAnimating) {
+            this._autoFlipRequestPending = true;
+            return;
+        }
+
+        this._autoFlipRequestPending = false;
+        const pendingResult = this._gameManager.prepareFlip();
+        this.playFlipAnimation(pendingResult);
     }
 
     /**

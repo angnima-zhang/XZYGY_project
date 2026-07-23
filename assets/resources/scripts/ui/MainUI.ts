@@ -16,7 +16,7 @@
  * 将此脚本挂载到 Canvas 或 MainPage 节点上，然后配置各节点引用
  */
 
-import { _decorator, Component, Node, Label, ProgressBar } from 'cc';
+import { _decorator, Component, Node, Label, ProgressBar, Button, UIOpacity, Widget, Tween, tween, Vec3 } from 'cc';
 import { GameManager, FlipResult } from '../core/GameManager';
 
 // 解构装饰器
@@ -53,6 +53,18 @@ export class MainUI extends Component {
     @property({ type: Label, displayName: '还需金额', tooltip: 'need/text-001 节点的 Label 组件' })
     needAmountLabel: Label | null = null;
 
+    /** 每日凌晨 4 点重置的倒计时 */
+    @property({ type: Label, displayName: '重置倒计时', tooltip: '重置时间节点的 Label 组件' })
+    resetCountdownLabel: Label | null = null;
+
+    /** 点击后将下一次重置顺延 24 小时的按钮 */
+    @property({ type: Node, displayName: '不要重置按钮', tooltip: '重置时间节点下的“不要重置”按钮' })
+    postponeResetButtonNode: Node | null = null;
+
+    /** 顺延成功后显示的提示节点 */
+    @property({ type: Node, displayName: '不重置 Toast', tooltip: 'Canvas 下的不重置 Toast 节点' })
+    noResetToastNode: Node | null = null;
+
     /**
      * 游戏管理器实例
      */
@@ -73,6 +85,9 @@ export class MainUI extends Component {
      */
     private _balanceChangeCallback: (() => void) | null = null;
 
+    /** 保留场景中配置的倒计时完整文案，只替换时间占位符。 */
+    private _resetCountdownTemplate: string = 'HH:MM:SS后重置';
+
     /**
      * 组件加载时调用
      * 初始化组件引用和事件监听
@@ -83,7 +98,17 @@ export class MainUI extends Component {
         console.log('[MainUI] onLoad, balanceLabel:', this.balanceLabel ? '已绑定' : '未绑定');
         console.log('[MainUI] onLoad, flipCountLabel:', this.flipCountLabel ? '已绑定' : '未绑定');
         console.log('[MainUI] onLoad, needAmountLabel:', this.needAmountLabel ? '已绑定' : '未绑定');
+        console.log('[MainUI] onLoad, resetCountdownLabel:', this.resetCountdownLabel ? '已绑定' : '未绑定');
         console.log('[MainUI] onLoad, progressBar:', this.progressBar ? '已绑定' : '未绑定');
+
+        if (this.resetCountdownLabel?.string.includes('HH:MM:SS')) {
+            this._resetCountdownTemplate = this.resetCountdownLabel.string;
+        }
+
+        this.postponeResetButtonNode?.on(Button.EventType.CLICK, this.onPostponeResetClick, this);
+        if (this.noResetToastNode) {
+            this.noResetToastNode.active = false;
+        }
 
         // 注册翻转事件回调
         this._gameManager.onFlip(this.onFlipResult.bind(this));
@@ -100,6 +125,12 @@ export class MainUI extends Component {
     onEnable() {
         console.log('[MainUI] onEnable 被调用');
         this.refreshAllUI();
+        this.updateResetCountdown();
+        this.schedule(this.updateResetCountdown, 1);
+    }
+
+    onDisable() {
+        this.unschedule(this.updateResetCountdown);
     }
 
     /**
@@ -107,12 +138,81 @@ export class MainUI extends Component {
      * 清理事件监听
      */
     onDestroy() {
+        this.unschedule(this.updateResetCountdown);
+        this.postponeResetButtonNode?.off(Button.EventType.CLICK, this.onPostponeResetClick, this);
+        this.stopAndHideNoResetToast();
         if (this._gameManager) {
             this._gameManager.offFlip(this.onFlipResult.bind(this));
             if (this._balanceChangeCallback) {
                 this._gameManager.offBalanceChange(this._balanceChangeCallback);
             }
         }
+    }
+
+    /** 将即将到来的重置时间顺延一天，并播放提示。 */
+    private onPostponeResetClick(): void {
+        if (!this._gameManager) return;
+
+        this._gameManager.getPlayerData().postponeNextDailyReset();
+        this.updateResetCountdown();
+        this.playNoResetToast();
+    }
+
+    /** Toast 从下方向屏幕中央移动，移动时逐渐降低透明度，停留两秒后隐藏。 */
+    private playNoResetToast(): void {
+        const toastNode = this.noResetToastNode;
+        if (!toastNode) return;
+
+        Tween.stopAllByTarget(toastNode);
+        toastNode.active = true;
+
+        const widget = toastNode.getComponent(Widget);
+        if (widget) {
+            widget.enabled = true;
+            widget.updateAlignment();
+        }
+
+        const targetPosition = toastNode.position.clone();
+        if (widget) {
+            widget.enabled = false;
+        }
+        toastNode.setPosition(new Vec3(targetPosition.x, targetPosition.y - 320, targetPosition.z));
+
+        let opacity = toastNode.getComponent(UIOpacity);
+        if (!opacity) {
+            opacity = toastNode.addComponent(UIOpacity);
+        }
+        Tween.stopAllByTarget(opacity);
+        opacity.opacity = 255;
+
+        tween(opacity)
+            .to(0.5, { opacity: 160 })
+            .start();
+
+        tween(toastNode)
+            .to(0.5, { position: targetPosition })
+            .call(() => {
+                if (widget) {
+                    widget.enabled = true;
+                    widget.updateAlignment();
+                }
+            })
+            .delay(2)
+            .call(() => this.stopAndHideNoResetToast())
+            .start();
+    }
+
+    /** 停止 Toast 动画并隐藏节点。 */
+    private stopAndHideNoResetToast(): void {
+        const toastNode = this.noResetToastNode;
+        if (!toastNode) return;
+
+        Tween.stopAllByTarget(toastNode);
+        const opacity = toastNode.getComponent(UIOpacity);
+        if (opacity) {
+            Tween.stopAllByTarget(opacity);
+        }
+        toastNode.active = false;
     }
 
     /**
@@ -261,6 +361,24 @@ export class MainUI extends Component {
         const oldText = this.needAmountLabel.string;
         this.needAmountLabel.string = this.formatNumber(Math.ceil(needAmount));
         console.log(`[MainUI] updateNeedAmount, balance=${balance}, target=${targetBalance}, needAmount=${needAmount}, oldText=${oldText} -> newText=${this.needAmountLabel.string}`);
+    }
+
+    /** 每秒刷新重置倒计时，跨过凌晨 4 点时同步执行存档重置。 */
+    private updateResetCountdown(): void {
+        if (!this._gameManager || !this.resetCountdownLabel) return;
+
+        const playerData = this._gameManager.getPlayerData();
+        if (playerData.checkDailyReset()) {
+            this.refreshAllUI();
+        }
+
+        const totalSeconds = playerData.getSecondsUntilDailyReset();
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        const pad = (value: number): string => value.toString().padStart(2, '0');
+        const formattedTime = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        this.resetCountdownLabel.string = this._resetCountdownTemplate.replace('HH:MM:SS', formattedTime);
     }
 
     /**

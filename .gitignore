@@ -8,6 +8,8 @@ local/
 build/
 profiles/
 native
+backups/
+.firecrawl/
 #//////////////////////////
 # NPM
 #//////////////////////////

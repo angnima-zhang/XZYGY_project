@@ -22,6 +22,8 @@
  * data.upgradeValue('value');     // 升级面值
  */
 
+import { TapCloudSave } from './TapCloudSave';
+
 /**
  * 升级项类型枚举（与场景节点名保持一致）
  */
@@ -101,6 +103,8 @@ interface PlayerDataSave {
     lastResetTime: number;
     /** 今日是否已达目标 */
     wonToday: boolean;
+    /** 玩家主动顺延后的下一次重置时间戳（旧存档没有此字段） */
+    dailyResetPostponeUntil?: number;
 }
 
 export class PlayerData {
@@ -118,11 +122,22 @@ export class PlayerData {
     /** 本地存储的键名 */
     private readonly STORAGE_KEY = 'xianzheng_player_data_v3';
 
+    /** 本次启动是否成功读取了已有存档 */
+    private _loadedFromSave: boolean = false;
+
+    /** 价格每升级 3 次降低 0.1，最低保持 1.1 倍。 */
+    private static readonly PRICE_GROWTH_STEP_LEVELS = 3;
+    private static readonly PRICE_GROWTH_DECREMENT = 0.1;
+    private static readonly PRICE_GROWTH_MIN_FACTOR = 1.1;
+
     /** 游戏目标金额（1亿） */
     readonly TARGET_BALANCE = 100_000_000;
 
     /** 每日重置时间（凌晨4点） */
     private readonly RESET_HOUR = 4;
+
+    /** 一天的毫秒数 */
+    private static readonly DAY_MS = 24 * 60 * 60 * 1000;
 
     /** 升级项最小值限制 */
     static readonly UPGRADE_MIN_VALUE: Record<UpgradeType, number> = {
@@ -157,7 +172,7 @@ export class PlayerData {
             growthType: 'multiply',
             growthFactor: 1.2,
             unit: '',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         },
         speed: {
             name: '速度',
@@ -166,7 +181,7 @@ export class PlayerData {
             growthType: 'fixed',
             growthFactor: -0.1,
             unit: '秒',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         },
         lucky: {
             name: '幸运',
@@ -175,43 +190,43 @@ export class PlayerData {
             growthType: 'fixed',
             growthFactor: 1,
             unit: '%',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         },
         critical: {
             name: '暴击率',
-            initialValue: 0,
+            initialValue: 1,
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
             unit: '%',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         },
         criticalBonus: {
             name: '暴击加成',
-            initialValue: 0,
+            initialValue: 1,
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
             unit: '',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         },
         pity: {
             name: '保底',
-            initialValue: 20,
-            initialPrice: 5,
+            initialValue: 5,
+            initialPrice: 123,
             growthType: 'fixed',
             growthFactor: -1,
             unit: '次',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         },
         streakBonus: {
             name: '连击加成',
-            initialValue: 0,
+            initialValue: 1,
             initialPrice: 5,
             growthType: 'multiply',
             growthFactor: 1.2,
             unit: '',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         },
         time: {
             name: '自动时间',
@@ -220,7 +235,7 @@ export class PlayerData {
             growthType: 'multiply',
             growthFactor: 1.2,
             unit: '秒',
-            priceGrowthFactor: 1.2
+            priceGrowthFactor: 2
         }
     };
 
@@ -247,6 +262,9 @@ export class PlayerData {
 
     /** 上次重置时间戳 */
     private _lastResetTime: number = 0;
+
+    /** 玩家主动顺延后的下一次重置时间戳 */
+    private _dailyResetPostponeUntil: number = 0;
 
     /** 今日是否已达目标 */
     private _wonToday: boolean = false;
@@ -377,8 +395,38 @@ export class PlayerData {
      * @returns 升级后的价格
      */
     calculateNextPrice(type: UpgradeType): number {
+        if (type === 'pity') {
+            return this.getPityPriceAtLevel(this.getUpgradeLevel(type) + 1);
+        }
+
         const currentPrice = this.getUpgradePrice(type);
-        return Math.ceil(currentPrice * this.UPGRADE_CONFIGS[type].priceGrowthFactor);
+        const currentLevel = this.getUpgradeLevel(type);
+        return Math.ceil(currentPrice * this.getPriceGrowthFactor(type, currentLevel));
+    }
+
+    /** 保底价格：123、1234、12345……；达到 1 次保底后不再继续增长。 */
+    private getPityPriceAtLevel(level: number): number {
+        const maxLevel = Math.max(
+            0,
+            Math.floor(this.UPGRADE_CONFIGS.pity.initialValue - PlayerData.UPGRADE_MIN_VALUE.pity)
+        );
+        const normalizedLevel = Math.min(maxLevel, Math.max(0, Math.floor(level)));
+        let price = this.UPGRADE_CONFIGS.pity.initialPrice;
+
+        for (let i = 0; i < normalizedLevel; i++) {
+            price = price * 10 + i + 4;
+        }
+
+        return price;
+    }
+
+    /** 获取指定升级次数对应的价格倍率。 */
+    private getPriceGrowthFactor(type: UpgradeType, level: number): number {
+        const startFactor = this.UPGRADE_CONFIGS[type].priceGrowthFactor;
+        const reductionCount = Math.floor(Math.max(0, level) / PlayerData.PRICE_GROWTH_STEP_LEVELS);
+        const factor = startFactor - reductionCount * PlayerData.PRICE_GROWTH_DECREMENT;
+        const roundedFactor = Math.round(factor * 10) / 10;
+        return Math.max(PlayerData.PRICE_GROWTH_MIN_FACTOR, roundedFactor);
     }
 
     /**
@@ -473,6 +521,64 @@ export class PlayerData {
         this.UPGRADE_CONFIGS[type].initialValue = initialValue;
         this.UPGRADE_CONFIGS[type].initialPrice = initialPrice;
         this.UPGRADE_CONFIGS[type].priceGrowthFactor = priceGrowthFactor;
+    }
+
+    /** 是否在本次启动中读取到了已有存档 */
+    hasLoadedSave(): boolean {
+        return this._loadedFromSave;
+    }
+
+    /** 按当前等级重算改动过的基础数值和最新价格，用于存档迁移。 */
+    recalculateUpgradeState(): void {
+        let changed = false;
+        const migratedValueTypes: UpgradeType[] = ['critical', 'criticalBonus', 'pity', 'streakBonus'];
+        (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
+            const state = this._upgrades[type];
+            if (!state) return;
+
+            const level = Math.max(0, Math.floor(state.level ?? 0));
+            let price: number;
+            if (type === 'pity') {
+                price = this.getPityPriceAtLevel(level);
+            } else {
+                price = this.UPGRADE_CONFIGS[type].initialPrice;
+                for (let i = 0; i < level; i++) {
+                    price = Math.ceil(price * this.getPriceGrowthFactor(type, i));
+                }
+            }
+
+            if (state.price !== price) {
+                state.price = price;
+                changed = true;
+            }
+
+            if (migratedValueTypes.includes(type)) {
+                let value = this.UPGRADE_CONFIGS[type].initialValue;
+                for (let i = 0; i < level; i++) {
+                    const config = this.UPGRADE_CONFIGS[type];
+                    if (config.growthType === 'multiply') {
+                        value = Math.ceil(value * config.growthFactor);
+                    } else {
+                        value += config.growthFactor;
+                    }
+
+                    const minValue = PlayerData.UPGRADE_MIN_VALUE[type];
+                    const maxValue = PlayerData.UPGRADE_MAX_VALUE[type];
+                    if (minValue > 0) value = Math.max(minValue, value);
+                    if (maxValue > 0) value = Math.min(maxValue, value);
+                }
+
+                if (state.value !== value) {
+                    state.value = value;
+                    changed = true;
+                }
+            }
+        });
+
+        if (changed) {
+            console.log('[PlayerData] 已按最新数值配置重算升级状态');
+            this.save();
+        }
     }
 
     /**
@@ -645,31 +751,72 @@ export class PlayerData {
 
     // ==================== 每日重置相关 ====================
 
+    /** 获取正常规则下，下一次凌晨 4 点重置的时间戳。 */
+    private getNextBaseResetTime(now: number): number {
+        const nextReset = new Date(now);
+        nextReset.setHours(this.RESET_HOUR, 0, 0, 0);
+        if (nextReset.getTime() <= now) {
+            nextReset.setDate(nextReset.getDate() + 1);
+        }
+
+        return nextReset.getTime();
+    }
+
+    /** 获取包含玩家顺延设置在内的下一次重置时间戳。 */
+    private getNextDailyResetTime(now: number): number {
+        if (this._dailyResetPostponeUntil > now) {
+            return this._dailyResetPostponeUntil;
+        }
+        return this.getNextBaseResetTime(now);
+    }
+
+    /** 获取距离下一次重置的整秒数。 */
+    getSecondsUntilDailyReset(now: number = Date.now()): number {
+        return Math.max(0, Math.ceil((this.getNextDailyResetTime(now) - now) / 1000));
+    }
+
     /**
-     * 检查当前时间是否超过重置点（凌晨4点）
-     * 如果超过且今日未重置过，则执行重置
+     * 将当前即将到来的重置时间顺延 24 小时。
+     * 连续点击会在已顺延的时间基础上继续增加 24 小时。
+     * @returns 顺延后的重置时间戳
      */
-    private checkAndResetIfNeeded(): void {
-        const now = Date.now();
-        const lastResetDate = this._lastResetTime ? new Date(this._lastResetTime) : null;
-        
+    postponeNextDailyReset(now: number = Date.now()): number {
+        this._dailyResetPostponeUntil = this.getNextDailyResetTime(now) + PlayerData.DAY_MS;
+        this.save();
+        return this._dailyResetPostponeUntil;
+    }
+
+    /**
+     * 检查当前时间是否超过重置点（凌晨 4 点）。
+     * @returns 本次检查是否执行了重置
+     */
+    checkDailyReset(now: number = Date.now()): boolean {
+        // 玩家已顺延时，在新重置时间到来前不执行每日重置。
+        if (this._dailyResetPostponeUntil > now) {
+            return false;
+        }
+
         // 计算今天的重置时间（凌晨4点）
         const todayReset = new Date(now);
         todayReset.setHours(this.RESET_HOUR, 0, 0, 0);
         const todayResetTime = todayReset.getTime();
-        
+
         // 如果现在还没到今天的重置时间，使用昨天的重置时间
-        const effectiveResetTime = now < todayResetTime 
-            ? todayResetTime - 24 * 60 * 60 * 1000 
-            : todayResetTime;
-        
+        if (now < todayResetTime) {
+            todayReset.setDate(todayReset.getDate() - 1);
+        }
+        const effectiveResetTime = todayReset.getTime();
+
         // 检查是否需要重置
-        if (!lastResetDate || this._lastResetTime < effectiveResetTime) {
+        if (!this._lastResetTime || this._lastResetTime < effectiveResetTime) {
             console.log('[PlayerData] 执行每日重置...');
             this.reset();
             this._lastResetTime = now;
             this.save();
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -682,6 +829,7 @@ export class PlayerData {
         this._currentStreak = 0;
         this._pityCounter = 0;
         this._wonToday = false;
+        this._dailyResetPostponeUntil = 0;
         
         // 重置8种升级项为初始值
         (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
@@ -719,10 +867,11 @@ export class PlayerData {
                 currentStreak: this._currentStreak,
                 pityCounter: this._pityCounter,
                 lastResetTime: this._lastResetTime,
-                wonToday: this._wonToday
+                wonToday: this._wonToday,
+                dailyResetPostponeUntil: this._dailyResetPostponeUntil
             };
             
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(saveData));
+            this.writeLocalSave(JSON.stringify(saveData));
         } catch (e) {
             console.error('[PlayerData] 保存数据失败:', e);
         }
@@ -734,7 +883,7 @@ export class PlayerData {
      */
     private load(): void {
         try {
-            const saveStr = localStorage.getItem(this.STORAGE_KEY);
+            const saveStr = this.readLocalSave();
             if (!saveStr) {
                 console.log('[PlayerData] 未找到存档，使用初始数据');
                 this.initializeDefaultData();
@@ -742,6 +891,7 @@ export class PlayerData {
             }
             
             const saveData: PlayerDataSave = JSON.parse(saveStr);
+            this._loadedFromSave = true;
             this._balance = saveData.balance;
             this._upgrades = saveData.upgrades;
             this._stats = saveData.stats;
@@ -749,13 +899,50 @@ export class PlayerData {
             this._pityCounter = saveData.pityCounter;
             this._lastResetTime = saveData.lastResetTime;
             this._wonToday = saveData.wonToday;
+            this._dailyResetPostponeUntil = saveData.dailyResetPostponeUntil ?? 0;
             
             console.log('[PlayerData] 数据加载成功');
-            this.checkAndResetIfNeeded(); // 检查是否需要每日重置
+            this.checkDailyReset(); // 检查是否需要每日重置
         } catch (e) {
             console.error('[PlayerData] 加载数据失败:', e);
             this.initializeDefaultData();
         }
+    }
+
+    /**
+     * TapTap 小游戏使用平台缓存；其他平台保持原有 localStorage 行为。
+     */
+    private writeLocalSave(value: string): void {
+        const runtime = globalThis as any;
+        if (runtime.tap?.setStorageSync) {
+            runtime.tap.setStorageSync(this.STORAGE_KEY, value);
+        } else {
+            localStorage.setItem(this.STORAGE_KEY, value);
+        }
+
+        TapCloudSave.markDirty();
+    }
+
+    /**
+     * 读取本地存档。TapTap 首次升级时会尝试迁移旧 localStorage 存档。
+     */
+    private readLocalSave(): string | null {
+        const runtime = globalThis as any;
+        if (!runtime.tap?.getStorageSync) {
+            return localStorage.getItem(this.STORAGE_KEY);
+        }
+
+        const tapSave = runtime.tap.getStorageSync(this.STORAGE_KEY);
+        if (tapSave !== undefined && tapSave !== null && tapSave !== '') {
+            return typeof tapSave === 'string' ? tapSave : JSON.stringify(tapSave);
+        }
+
+        const legacySave = runtime.localStorage?.getItem?.(this.STORAGE_KEY) ?? null;
+        if (legacySave) {
+            runtime.tap.setStorageSync(this.STORAGE_KEY, legacySave);
+            console.log('[PlayerData] 已将旧存档迁移到 TapTap 本地缓存');
+        }
+        return legacySave;
     }
 
     /**
@@ -767,6 +954,7 @@ export class PlayerData {
         this._pityCounter = 0;
         this._wonToday = false;
         this._lastResetTime = Date.now();
+        this._dailyResetPostponeUntil = 0;
         
         // 初始化8种升级项为初始值
         (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {

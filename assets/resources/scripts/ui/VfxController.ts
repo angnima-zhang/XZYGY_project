@@ -26,7 +26,7 @@
  * 将此脚本挂载到 vfx 节点上，然后通过 VfxManager 调用 play/stop 方法
  */
 
-import { _decorator, Component, Animation } from 'cc';
+import { _decorator, Component, Animation, AnimationClip } from 'cc';
 
 const { ccclass, property } = _decorator;
 
@@ -48,6 +48,14 @@ export class VfxController extends Component {
 
     private _hideTimer: number | null = null;
 
+    private onAnimationFinished(): void {
+        this.stop();
+    }
+
+    private clearFinishedListener(): void {
+        this.animation?.node.off(Animation.EventType.FINISHED, this.onAnimationFinished, this);
+    }
+
     /**
      * 开始播放（非循环模式）
      */
@@ -61,27 +69,28 @@ export class VfxController extends Component {
             clearTimeout(this._hideTimer);
             this._hideTimer = null;
         }
+        this.clearFinishedListener();
 
         this.node.active = true;
         this._isPlaying = true;
         this._isLooping = false;
 
-        if (this.animation.clips.length > 0) {
-            this.animation.clips[0].wrapMode = 0;
-        } else {
-            console.warn('[VfxController] play: animation.clips 为空，跳过 wrapMode 设置');
+        const clip = this.animation.defaultClip ?? this.animation.clips[0] ?? null;
+        if (!clip) {
+            console.warn('[VfxController] play: 没有可用的动画剪辑');
+            this.stop();
+            return;
         }
+        clip.wrapMode = AnimationClip.WrapMode.Normal;
 
         // 停止已有播放并重置时间，确保每次都能从头开始播放
         this.animation.stop();
-        const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
-        if (clipName) {
-            let state = this.animation.getState(clipName);
-            if (state) {
-                state.time = 0;
-            }
+        const state = this.animation.getState(clip.name);
+        if (state) {
+            state.wrapMode = AnimationClip.WrapMode.Normal;
+            state.time = 0;
         }
-        this.animation.play();
+        this.animation.play(clip.name);
 
         const hideTime = duration > 0 ? duration : this.defaultDuration;
 
@@ -90,11 +99,7 @@ export class VfxController extends Component {
                 this.stop();
             }, hideTime * 1000);
         } else {
-            const onFinished = () => {
-                this.stop();
-                this.animation?.node.off(Animation.EventType.FINISHED, onFinished);
-            };
-            this.animation.node.on(Animation.EventType.FINISHED, onFinished);
+            this.animation.node.once(Animation.EventType.FINISHED, this.onAnimationFinished, this);
         }
     }
 
@@ -123,6 +128,7 @@ export class VfxController extends Component {
             clearTimeout(this._hideTimer);
             this._hideTimer = null;
         }
+        this.clearFinishedListener();
 
         const clipName = this.animation.defaultClip?.name ?? (this.animation.clips.length > 0 ? this.animation.clips[0].name : '');
         console.log(`[VfxController] defaultClip=${this.animation.defaultClip?.name}`);
@@ -154,7 +160,7 @@ export class VfxController extends Component {
 
         // 设置循环模式到 clip
         for (const clip of this.animation.clips) {
-            clip.wrapMode = 2;
+            clip.wrapMode = AnimationClip.WrapMode.Loop;
         }
 
         console.log(`[VfxController] 设置 scheduleOnce 延迟播放...`);
@@ -188,7 +194,7 @@ export class VfxController extends Component {
 
             console.log(`[VfxController] callback: state.wrapMode=${state.wrapMode}, state.time=${state.time}, state.duration=${state.duration}`);
 
-            state.wrapMode = 2;
+            state.wrapMode = AnimationClip.WrapMode.Loop;
             state.time = 0;
 
             this.animation.play(clipName);
@@ -207,6 +213,8 @@ export class VfxController extends Component {
     stopLooping(): void {
         if (!this.animation) return;
 
+        this.clearFinishedListener();
+
         if (this._hideTimer !== null) {
             clearTimeout(this._hideTimer);
             this._hideTimer = null;
@@ -223,6 +231,8 @@ export class VfxController extends Component {
      */
     stop(): void {
         if (!this.animation) return;
+
+        this.clearFinishedListener();
 
         if (this._hideTimer !== null) {
             clearTimeout(this._hideTimer);
@@ -274,6 +284,7 @@ export class VfxController extends Component {
     }
 
     onDestroy() {
+        this.clearFinishedListener();
         if (this._hideTimer !== null) {
             clearTimeout(this._hideTimer);
             this._hideTimer = null;

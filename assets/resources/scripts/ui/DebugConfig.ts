@@ -13,7 +13,7 @@ export class DebugConfig extends Component {
     value_initialPrice: number = 5;
 
     @property({ group: '面值', displayName: '价格增长系数', step: 0.1, min: 1 })
-    value_priceGrowthFactor: number = 1.2;
+    value_priceGrowthFactor: number = 2;
 
     @property({ group: '速度', displayName: '初始值', step: 0.5, min: 0.5 })
     speed_initialValue: number = 5;
@@ -22,7 +22,7 @@ export class DebugConfig extends Component {
     speed_initialPrice: number = 5;
 
     @property({ group: '速度', displayName: '价格增长系数', step: 0.1, min: 0.1 })
-    speed_priceGrowthFactor: number = 1.2;
+    speed_priceGrowthFactor: number = 2;
 
     @property({ group: '幸运', displayName: '初始值(%)', step: 1, min: 0, max: 100 })
     lucky_initialValue: number = 50;
@@ -31,43 +31,43 @@ export class DebugConfig extends Component {
     lucky_initialPrice: number = 5;
 
     @property({ group: '幸运', displayName: '价格增长系数', step: 0.1, min: 0.1 })
-    lucky_priceGrowthFactor: number = 1.2;
+    lucky_priceGrowthFactor: number = 2;
 
     @property({ group: '暴击率', displayName: '初始值(%)', step: 1, min: 0, max: 100 })
-    critical_initialValue: number = 0;
+    critical_initialValue: number = 1;
 
     @property({ group: '暴击率', displayName: '初始价格', step: 1, min: 1 })
     critical_initialPrice: number = 5;
 
     @property({ group: '暴击率', displayName: '价格增长系数', step: 0.1, min: 0.1 })
-    critical_priceGrowthFactor: number = 1.2;
+    critical_priceGrowthFactor: number = 2;
     
     @property({ group: '暴击加成', displayName: '初始值', step: 1, min: 0 })
-    criticalBonus_initialValue: number = 0;
+    criticalBonus_initialValue: number = 1;
 
     @property({ group: '暴击加成', displayName: '初始价格', step: 1, min: 1 })
     criticalBonus_initialPrice: number = 5;
 
     @property({ group: '暴击加成', displayName: '价格增长系数', step: 0.1, min: 0.1 })
-    criticalBonus_priceGrowthFactor: number = 1.2;
+    criticalBonus_priceGrowthFactor: number = 2;
 
     @property({ group: '保底', displayName: '初始值(次)', step: 1, min: 1 })
-    pity_initialValue: number = 20;
+    pity_initialValue: number = 5;
 
     @property({ group: '保底', displayName: '初始价格', step: 1, min: 1 })
-    pity_initialPrice: number = 5;
+    pity_initialPrice: number = 123;
 
     @property({ group: '保底', displayName: '价格增长系数', step: 0.1, min: 0.1 })
-    pity_priceGrowthFactor: number = 1.2;
+    pity_priceGrowthFactor: number = 2;
     
     @property({ group: '连击加成', displayName: '初始值', step: 1, min: 0 })
-    streakBonus_initialValue: number = 0;
+    streakBonus_initialValue: number = 1;
 
     @property({ group: '连击加成', displayName: '初始价格', step: 1, min: 1 })
     streakBonus_initialPrice: number = 5;
 
     @property({ group: '连击加成', displayName: '价格增长系数', step: 0.1, min: 0.1 })
-    streakBonus_priceGrowthFactor: number = 1.2;
+    streakBonus_priceGrowthFactor: number = 2;
 
     @property({ group: '自动时间', displayName: '初始值(秒)', step: 1, min: 1 })
     time_initialValue: number = 10;
@@ -76,7 +76,7 @@ export class DebugConfig extends Component {
     time_initialPrice: number = 5;
 
     @property({ group: '自动时间', displayName: '价格增长系数', step: 0.1, min: 0.1 })
-    time_priceGrowthFactor: number = 1.2;
+    time_priceGrowthFactor: number = 2;
 
     // @property({ group: '全局', displayName: '价格增长系数', step: 0.05, min: 1.0 })
     // global_growthFactor: number = 1.2;
@@ -84,7 +84,7 @@ export class DebugConfig extends Component {
     // @property({ group: '全局', displayName: '翻转动画时长(秒)', step: 0.1, min: 0.1 })
     // flipDuration: number = 1.5;
 
-    @property({ group: '全局', displayName: '强制重置数据', tooltip: '勾选后清除 localStorage 并重新初始化所有数据' })
+    @property({ group: '全局', displayName: '强制重置数据', tooltip: '勾选后重新初始化所有玩家数据，仅用于调试' })
     forceReset: boolean = false;
 
     onLoad() {
@@ -105,18 +105,14 @@ export class DebugConfig extends Component {
 
         // pd.setGlobalGrowthFactor(this.global_growthFactor);
 
-        // 强制重置：清除 localStorage 后重新初始化
-        if (this.forceReset) {
-            try {
-                localStorage.removeItem('xianzheng_player_data_v3');
-                console.log('[DebugConfig] 已清除 localStorage');
-            } catch (e) {
-                console.warn('[DebugConfig] 清除 localStorage 失败:', e);
-            }
+        // 新玩家应用初始配置；已有存档按当前等级迁移到最新数值和价格曲线。
+        if (this.forceReset || !pd.hasLoadedSave()) {
             pd.applyDebugConfig();
-            console.log('[DebugConfig] 已强制重置所有数据');
+            console.log(this.forceReset
+                ? '[DebugConfig] 已强制重置所有数据'
+                : '[DebugConfig] 已为新玩家应用初始配置');
         } else {
-            pd.applyDebugConfig();
+            pd.recalculateUpgradeState();
         }
 
         console.log('[DebugConfig] 调试配置已应用到 PlayerData');
