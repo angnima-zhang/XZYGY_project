@@ -24,6 +24,11 @@ const { ccclass, property } = _decorator;
 
 @ccclass('MainUI')
 export class MainUI extends Component {
+    private static _instance: MainUI | null = null;
+
+    static getInstance(): MainUI | null {
+        return MainUI._instance;
+    }
 
     /**
      * 余额显示 Label 节点
@@ -88,11 +93,16 @@ export class MainUI extends Component {
     /** 保留场景中配置的倒计时完整文案，只替换时间占位符。 */
     private _resetCountdownTemplate: string = 'HH:MM:SS后重置';
 
+    private _shareFailureToastNode: Node | null = null;
+
+    private _shareSuccessToastNode: Node | null = null;
+
     /**
      * 组件加载时调用
      * 初始化组件引用和事件监听
      */
     onLoad() {
+        MainUI._instance = this;
         this._gameManager = GameManager.getInstance();
         console.log('[MainUI] onLoad, _gameManager:', !!this._gameManager);
         console.log('[MainUI] onLoad, balanceLabel:', this.balanceLabel ? '已绑定' : '未绑定');
@@ -108,6 +118,14 @@ export class MainUI extends Component {
         this.postponeResetButtonNode?.on(Button.EventType.CLICK, this.onPostponeResetClick, this);
         if (this.noResetToastNode) {
             this.noResetToastNode.active = false;
+        }
+        this._shareFailureToastNode = this.node.getChildByName('分享失败toast');
+        this._shareSuccessToastNode = this.node.getChildByName('分享成功toast');
+        if (this._shareFailureToastNode) {
+            this._shareFailureToastNode.active = false;
+        }
+        if (this._shareSuccessToastNode) {
+            this._shareSuccessToastNode.active = false;
         }
 
         // 注册翻转事件回调
@@ -138,9 +156,14 @@ export class MainUI extends Component {
      * 清理事件监听
      */
     onDestroy() {
+        if (MainUI._instance === this) {
+            MainUI._instance = null;
+        }
         this.unschedule(this.updateResetCountdown);
         this.postponeResetButtonNode?.off(Button.EventType.CLICK, this.onPostponeResetClick, this);
         this.stopAndHideNoResetToast();
+        this.stopAndHideToast(this._shareFailureToastNode);
+        this.stopAndHideToast(this._shareSuccessToastNode);
         if (this._gameManager) {
             this._gameManager.offFlip(this.onFlipResult.bind(this));
             if (this._balanceChangeCallback) {
@@ -160,7 +183,18 @@ export class MainUI extends Component {
 
     /** Toast 从下方向屏幕中央移动，移动时逐渐降低透明度，停留两秒后隐藏。 */
     private playNoResetToast(): void {
-        const toastNode = this.noResetToastNode;
+        this.playToast(this.noResetToastNode);
+    }
+
+    /** 使用与“不重置 Toast”一致的表现播放分享结果提示。 */
+    showShareResultToast(success: boolean): void {
+        const toastNode = success ? this._shareSuccessToastNode : this._shareFailureToastNode;
+        const otherToastNode = success ? this._shareFailureToastNode : this._shareSuccessToastNode;
+        this.stopAndHideToast(otherToastNode);
+        this.playToast(toastNode);
+    }
+
+    private playToast(toastNode: Node | null): void {
         if (!toastNode) return;
 
         Tween.stopAllByTarget(toastNode);
@@ -198,13 +232,16 @@ export class MainUI extends Component {
                 }
             })
             .delay(2)
-            .call(() => this.stopAndHideNoResetToast())
+            .call(() => this.stopAndHideToast(toastNode))
             .start();
     }
 
     /** 停止 Toast 动画并隐藏节点。 */
     private stopAndHideNoResetToast(): void {
-        const toastNode = this.noResetToastNode;
+        this.stopAndHideToast(this.noResetToastNode);
+    }
+
+    private stopAndHideToast(toastNode: Node | null): void {
         if (!toastNode) return;
 
         Tween.stopAllByTarget(toastNode);

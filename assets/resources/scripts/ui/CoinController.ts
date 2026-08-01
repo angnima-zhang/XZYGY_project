@@ -32,6 +32,7 @@ import { _decorator, Component, Node, Label, Sprite, SpriteFrame, Tween, tween, 
 import { GameManager, FlipResult } from '../core/GameManager';
 import { VfxManager } from './VfxManager';
 import { DebugConfig } from './DebugConfig';
+import { SettingPopupCtrl } from './SettingPopupCtrl';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -710,9 +711,13 @@ export class CoinController extends Component {
             this.updateCritCountDisplay();
         }
 
-        // 检查是否达到胜利条件
-        if (this._gameManager.checkWinCondition()) {
+        // 胜利优先于暴击震动，避免同一次翻转连续震动两次。
+        const hasWon = this._gameManager.checkWinCondition();
+        if (hasWon) {
+            SettingPopupCtrl.vibrateGameplay('heavy');
             this.showWinEffect();
+        } else if (result.isCrit) {
+            SettingPopupCtrl.vibrateGameplay('medium');
         }
 
         // 恢复所有按钮

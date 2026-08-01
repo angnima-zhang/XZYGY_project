@@ -35,6 +35,7 @@ import { UpgradeType } from '../core/PlayerData';
 import { PlayerData } from '../core/PlayerData';
 import { NumberFormatter } from '../utils/NumberFormatter';
 import { AdManager } from './AdManager';
+import { MainUI } from './MainUI';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -167,6 +168,7 @@ export class UpgradeItemCtrl extends Component {
         // 注册余额变更回调，实时刷新按钮状态
         this._balanceChangeCallback = this._onEventCallback.bind(this);
         this._gameManager.onBalanceChange(this._balanceChangeCallback);
+        AdManager.onWechatRewardModeChanged(this._onEventCallback, this);
 
         console.log(`[UpgradeItemCtrl] 初始化完成，类型: ${this.upgradeType}`);
     }
@@ -191,6 +193,7 @@ export class UpgradeItemCtrl extends Component {
             if (this.adButtonNode && this.adButtonNode.isValid) {
                 this.adButtonNode.off(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
             }
+            AdManager.offWechatRewardModeChanged(this._onEventCallback, this);
         } catch (e) {
             console.warn('[UpgradeItemCtrl] onDestroy cleanup error:', e);
         }
@@ -244,9 +247,14 @@ export class UpgradeItemCtrl extends Component {
             return;
         }
 
-        console.log(`[UpgradeItemCtrl] 广告按钮点击，展示激励视频广告...`);
+        const usesWechatShareReward = AdManager.shouldUseWechatShareReward();
+        console.log(`[UpgradeItemCtrl] ${usesWechatShareReward ? '分享' : '广告'}按钮点击，展示奖励流程...`);
 
         adManager.showRewardedAd((success: boolean) => {
+            if (usesWechatShareReward) {
+                MainUI.getInstance()?.showShareResultToast(success);
+            }
+
             if (success) {
                 // 用户看完了广告，免费升级
                 console.log(`[UpgradeItemCtrl] 发放广告升级奖励: ${this.upgradeType}`);
@@ -385,11 +393,13 @@ export class UpgradeItemCtrl extends Component {
                 adButton.interactable = !isAtLimit;
             }
 
-            if (isAtLimit) {
-                const adLabel = this.adButtonNode.getComponentInChildren(Label);
-                if (adLabel) {
-                    adLabel.string = '已满级';
-                }
+            const adLabel = this.adButtonNode.getComponentInChildren(Label);
+            if (adLabel) {
+                adLabel.string = isAtLimit
+                    ? '已满级'
+                    : AdManager.shouldUseWechatShareReward()
+                        ? '分享升级'
+                        : '广告升级';
             }
         }
     }

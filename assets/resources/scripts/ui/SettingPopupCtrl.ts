@@ -56,6 +56,8 @@ interface SettingsData {
 @ccclass('SettingPopupCtrl')
 export class SettingPopupCtrl extends Component {
 
+    private static _instance: SettingPopupCtrl | null = null;
+
     /**
      * 关闭按钮节点
      */
@@ -99,11 +101,22 @@ export class SettingPopupCtrl extends Component {
      */
     private _isShowing: boolean = false;
 
+    /** 游戏内反馈震动，遵循设置页的震动开关。 */
+    static vibrateGameplay(type: 'light' | 'medium' | 'heavy' = 'light'): void {
+        const instance = SettingPopupCtrl._instance;
+        if (!instance?._settings.vibrateEnabled) {
+            return;
+        }
+
+        instance.triggerVibration(type);
+    }
+
     /**
      * 组件加载时调用
      * 初始化设置和事件监听
      */
     onLoad() {
+        SettingPopupCtrl._instance = this;
         this.loadSettings();
 
         if (this.closeBtnNode) {
@@ -153,6 +166,10 @@ export class SettingPopupCtrl extends Component {
      * 清理事件监听
      */
     onDestroy() {
+        if (SettingPopupCtrl._instance === this) {
+            SettingPopupCtrl._instance = null;
+        }
+
         try {
             if (this.closeBtnNode && this.closeBtnNode.isValid) {
                 this.closeBtnNode.off(Node.EventType.TOUCH_END, this.onCloseClick, this);
@@ -311,10 +328,11 @@ export class SettingPopupCtrl extends Component {
      * 触发震动
      * 仅在微信小游戏或支持 Vibration API 的浏览器中生效
      */
-    private triggerVibration(): void {
-        if (typeof wx !== 'undefined' && typeof wx.vibrateShort === 'function') {
-            wx.vibrateShort({ type: 'light' });
-        } else if (navigator.vibrate) {
+    private triggerVibration(type: 'light' | 'medium' | 'heavy' = 'light'): void {
+        const wxApi = (globalThis as any).wx;
+        if (typeof wxApi?.vibrateShort === 'function') {
+            wxApi.vibrateShort({ type });
+        } else if (typeof navigator !== 'undefined' && navigator.vibrate) {
             navigator.vibrate(50);
         }
     }
