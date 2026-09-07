@@ -59,7 +59,7 @@
  *       └── time: 自动时间属性
  */
 
-import { _decorator, Component, Node, Label, tween, Vec3, UIOpacity } from 'cc';
+import { _decorator, Component, Node, EventTouch, Label, tween, Vec3, UIOpacity } from 'cc';
 import { GameManager } from '../core/GameManager';
 import { NumberFormatter } from '../utils/NumberFormatter';
 
@@ -162,6 +162,9 @@ export class StatusPageCtrl extends Component {
      * 记录初始 X 坐标（固定值，避免 Widget 组件影响）
      */
     private _originalX: number = -720;
+    private _leaderboardNode: Node | null = null;
+    private _leaderboardTapCount: number = 0;
+    private readonly CHEAT_MODE_UNLOCK_TAP_COUNT = 22;
 
     /**
      * 组件加载时调用
@@ -172,6 +175,13 @@ export class StatusPageCtrl extends Component {
         // 绑定返回按钮事件
         if (this.backBtnNode) {
             this.backBtnNode.on(Node.EventType.TOUCH_END, this.onBackClick, this);
+        }
+
+        this._leaderboardNode = this.node.getChildByName('title')?.getChildByName('排行榜') ?? null;
+        if (this._leaderboardNode) {
+            this._leaderboardNode.on(Node.EventType.TOUCH_END, this.onLeaderboardClick, this);
+        } else {
+            console.warn('[StatusPageCtrl] 未找到 StatusPage/title/排行榜 节点，作弊开关不可用');
         }
 
         // 记录初始 X 位置，不再通过 active 控制显示/隐藏
@@ -186,6 +196,9 @@ export class StatusPageCtrl extends Component {
         if (this.backBtnNode && this.backBtnNode.isValid) {
             this.backBtnNode.off(Node.EventType.TOUCH_END, this.onBackClick, this);
         }
+        if (this._leaderboardNode && this._leaderboardNode.isValid) {
+            this._leaderboardNode.off(Node.EventType.TOUCH_END, this.onLeaderboardClick, this);
+        }
     }
 
     /**
@@ -194,6 +207,26 @@ export class StatusPageCtrl extends Component {
     private onBackClick(): void {
         console.log('[StatusPageCtrl] onBackClick 被调用');
         this.hide();
+    }
+
+    private onLeaderboardClick(event: EventTouch): void {
+        event.propagationStopped = true;
+        if (!this._gameManager) {
+            return;
+        }
+
+        const playerData = this._gameManager.getPlayerData();
+        if (playerData.isCheatModeEnabled()) {
+            this._gameManager.setCheatModeEnabled(false);
+            this._leaderboardTapCount = 0;
+            return;
+        }
+
+        this._leaderboardTapCount += 1;
+        if (this._leaderboardTapCount >= this.CHEAT_MODE_UNLOCK_TAP_COUNT) {
+            this._gameManager.setCheatModeEnabled(true);
+            this._leaderboardTapCount = 0;
+        }
     }
 
     /**
@@ -214,6 +247,7 @@ export class StatusPageCtrl extends Component {
         console.log('[StatusPageCtrl] hide() 被调用');
         console.log('[StatusPageCtrl] 恢复 X:', this._originalX);
         this.node.setPosition(this._originalX, 0, 0);
+        this._leaderboardTapCount = 0;
         console.log('[StatusPageCtrl] hide() 完成');
     }
 

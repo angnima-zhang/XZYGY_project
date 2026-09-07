@@ -33,6 +33,8 @@ const { ccclass, property } = _decorator;
 @ccclass('AutoFlipBuyCtrl')
 export class AutoFlipBuyCtrl extends Component {
 
+    private readonly WECHAT_REWARD_KEY = 'autoFlip';
+
     /**
      * 标题 Label 节点
      */
@@ -161,7 +163,7 @@ export class AutoFlipBuyCtrl extends Component {
         const price = this._gameManager.getUpgradePrice('time');
         const balance = this._gameManager.getBalance();
 
-        if (balance < price) {
+        if (balance < price && !this._gameManager.getPlayerData().isCheatModeEnabled()) {
             console.warn(`[AutoFlipBuyCtrl] 余额不足，需要: ${price}, 当前: ${balance}`);
             return;
         }
@@ -203,10 +205,10 @@ export class AutoFlipBuyCtrl extends Component {
             return;
         }
 
-        const usesWechatShareReward = AdManager.shouldUseWechatShareReward();
+        const usesWechatShareReward = AdManager.shouldUseWechatShareReward(this.WECHAT_REWARD_KEY);
         console.log(`[AutoFlipBuyCtrl] ${usesWechatShareReward ? '分享' : '广告'}按钮点击，展示奖励流程...`);
 
-        adManager.showRewardedAd((success: boolean) => {
+        adManager.showRewardedAd(this.WECHAT_REWARD_KEY, (success: boolean) => {
             if (usesWechatShareReward) {
                 MainUI.getInstance()?.showShareResultToast(success);
             }
@@ -264,7 +266,7 @@ export class AutoFlipBuyCtrl extends Component {
 
         const price = this._gameManager.getUpgradePrice('time');
         const balance = this._gameManager.getBalance();
-        const canAfford = balance >= price;
+        const canAfford = this._gameManager.getPlayerData().isCheatModeEnabled() || balance >= price;
         const isAutoFlipping = this._gameManager.isAutoFlipping();
         const isAtLimit = this._isUpgradeAtLimit();
         const canBuy = canAfford && !isAutoFlipping && !isAtLimit;
@@ -305,7 +307,7 @@ export class AutoFlipBuyCtrl extends Component {
             if (adLabel) {
                 adLabel.string = isAtLimit
                     ? '已满级'
-                    : AdManager.shouldUseWechatShareReward()
+                    : AdManager.shouldUseWechatShareReward(this.WECHAT_REWARD_KEY)
                         ? '分享购买'
                         : '广告购买';
             }

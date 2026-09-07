@@ -406,6 +406,7 @@ export class MainUI extends Component {
 
         const playerData = this._gameManager.getPlayerData();
         if (playerData.checkDailyReset()) {
+            this._gameManager.notifyBalanceChange();
             this.refreshAllUI();
         }
 

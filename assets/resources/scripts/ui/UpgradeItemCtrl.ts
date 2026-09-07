@@ -214,7 +214,7 @@ export class UpgradeItemCtrl extends Component {
         const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType);
         const balance = this._gameManager.getBalance();
         
-        if (balance < currentPrice) {
+        if (balance < currentPrice && !this._gameManager.getPlayerData().isCheatModeEnabled()) {
             console.warn(`[UpgradeItemCtrl] 余额不足，需要: ${currentPrice}, 当前: ${balance}`);
             return;
         }
@@ -247,10 +247,10 @@ export class UpgradeItemCtrl extends Component {
             return;
         }
 
-        const usesWechatShareReward = AdManager.shouldUseWechatShareReward();
+        const usesWechatShareReward = AdManager.shouldUseWechatShareReward(this.upgradeType);
         console.log(`[UpgradeItemCtrl] ${usesWechatShareReward ? '分享' : '广告'}按钮点击，展示奖励流程...`);
 
-        adManager.showRewardedAd((success: boolean) => {
+        adManager.showRewardedAd(this.upgradeType, (success: boolean) => {
             if (usesWechatShareReward) {
                 MainUI.getInstance()?.showShareResultToast(success);
             }
@@ -357,7 +357,7 @@ export class UpgradeItemCtrl extends Component {
 
         const currentPrice = this._gameManager.getUpgradePrice(this.upgradeType);
         const balance = this._gameManager.getBalance();
-        const canAfford = balance >= currentPrice;
+        const canAfford = this._gameManager.getPlayerData().isCheatModeEnabled() || balance >= currentPrice;
         const isAtLimit = this._isUpgradeAtLimit();
         const canBuy = canAfford && !isAtLimit;
 
@@ -397,7 +397,7 @@ export class UpgradeItemCtrl extends Component {
             if (adLabel) {
                 adLabel.string = isAtLimit
                     ? '已满级'
-                    : AdManager.shouldUseWechatShareReward()
+                    : AdManager.shouldUseWechatShareReward(this.upgradeType)
                         ? '分享升级'
                         : '广告升级';
             }

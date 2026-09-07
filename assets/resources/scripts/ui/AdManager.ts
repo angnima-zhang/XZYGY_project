@@ -2,7 +2,7 @@
  * AdManager - 小游戏广告管理器
  * 
  * 功能说明：
- * - 管理 TapTap 激励视频广告与微信分享奖励
+ * - 管理 TapTap 激励视频广告、微信分享奖励与微信激励视频广告
  * - 提供单例访问方式
  * - 处理广告加载/关闭以及微信分享离开/返回事件
  * - 支持编辑器测试模式
@@ -22,13 +22,9 @@
 
 import { _decorator, Component, EventTarget, Node } from 'cc';
 import { EDITOR, PREVIEW } from 'cc/env';
+import { PlayerData } from '../core/PlayerData';
 
 const { ccclass, property } = _decorator;
-
-interface WechatShareRewardRecord {
-    date: string;
-    count: number;
-}
 
 /**
  * 广告管理器单例
@@ -38,13 +34,13 @@ export class AdManager extends Component {
 
     /**
      * 微信激励视频广告位ID
-     * 微信每日分享奖励用尽后使用
+     * 每个升级项的前3次奖励使用分享，之后使用该广告位
      */
     @property({
         displayName: '微信激励视频广告位ID',
-        tooltip: '每日5次分享奖励用尽后使用，格式: adunit-xxxxxxxxxxxxxxxx'
+        tooltip: '每个升级项分享3次后使用，格式: adunit-xxxxxxxxxxxxxxxx'
     })
-    rewardedAdUnitId: string = 'adunit-xxxxxxxxxxxxxxxx';
+    rewardedAdUnitId: string = 'adunit-0bc0c482b6706bb7';
 
     /**
      * TapTap 激励视频推广位ID
@@ -68,8 +64,7 @@ export class AdManager extends Component {
     testMode: boolean = true;
 
     private static _instance: AdManager | null = null;
-    private static readonly WECHAT_SHARE_REWARD_LIMIT = 5;
-    private static readonly WECHAT_SHARE_REWARD_STORAGE_KEY = 'xianzheng_wechat_share_rewards_v1';
+    private static readonly WECHAT_SHARE_REWARD_LIMIT = 3;
     private static readonly WECHAT_REWARD_MODE_CHANGED = 'wechat-reward-mode-changed';
     private static readonly _wechatRewardModeEvents = new EventTarget();
 
@@ -82,8 +77,8 @@ export class AdManager extends Component {
     private _shareHiddenAt: number | null = null;
     private _shareResolve: (() => void) | null = null;
     private _shareReject: ((reason?: any) => void) | null = null;
+    private _activeWechatShareRewardKey: string | null = null;
     private _wechatLogManager: any = null;
-    private _lastWechatShareRewardEnabled: boolean | null = null;
 
     private readonly _wechatShareTitle: string = '我在《挣一个亿先》挑战破亿，快来试试！';
 
@@ -149,13 +144,12 @@ export class AdManager extends Component {
         return !runtime.tap && !!runtime.wx;
     }
 
-    /** 微信每天前 5 次成功分享可领取奖励；达到上限后切换为激励视频广告。 */
-    static shouldUseWechatShareReward(): boolean {
+    static shouldUseWechatShareReward(rewardKey: string): boolean {
         if (!AdManager.isWechatSharePlatform()) {
             return false;
         }
 
-        return AdManager.getWechatShareRewardRecord().count < AdManager.WECHAT_SHARE_REWARD_LIMIT;
+        return PlayerData.getInstance().getWechatShareRewardCount(rewardKey) < AdManager.WECHAT_SHARE_REWARD_LIMIT;
     }
 
     static onWechatRewardModeChanged(callback: () => void, target: object): void {
@@ -188,10 +182,10 @@ export class AdManager extends Component {
             return;
         }
 
-        // 微信小游戏使用分享奖励；TapTap 仍使用激励视频广告。
+        // 微信前3次使用分享奖励，同时提前初始化后续使用的激励视频广告。
         if (runtime.wx) {
             this.initWechatShare(runtime.wx);
-            this.syncWechatRewardMode();
+            this.initRewardedVideoAd(runtime.wx, this.rewardedAdUnitId, '微信');
             return;
         }
 
@@ -236,57 +230,13 @@ export class AdManager extends Component {
         console.log('[AdManager] 微信分享奖励初始化完成');
     }
 
-    private syncWechatRewardMode(): void {
-        const enabled = AdManager.shouldUseWechatShareReward();
-        if (this._lastWechatShareRewardEnabled !== null && this._lastWechatShareRewardEnabled !== enabled) {
-            AdManager._wechatRewardModeEvents.emit(AdManager.WECHAT_REWARD_MODE_CHANGED);
-        }
-        this._lastWechatShareRewardEnabled = enabled;
-    }
-
-    private static getWechatShareRewardRecord(): WechatShareRewardRecord {
-        const today = AdManager.getLocalDateKey();
-        const wxApi = (globalThis as any).wx;
-        const raw = wxApi?.getStorageSync?.(AdManager.WECHAT_SHARE_REWARD_STORAGE_KEY);
-
-        try {
-            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            if (parsed?.date === today) {
-                return {
-                    date: today,
-                    count: Math.min(AdManager.WECHAT_SHARE_REWARD_LIMIT, Math.max(0, Number(parsed.count) || 0)),
-                };
-            }
-        } catch (error) {
-            console.warn('[AdManager] 读取微信分享次数失败，按未分享处理:', error);
-        }
-
-        return { date: today, count: 0 };
-    }
-
-    private static getLocalDateKey(): string {
-        const now = new Date();
-        const month = `${now.getMonth() + 1}`.padStart(2, '0');
-        const day = `${now.getDate()}`.padStart(2, '0');
-        return `${now.getFullYear()}-${month}-${day}`;
-    }
-
-    private recordWechatShareSuccess(): void {
-        const record = AdManager.getWechatShareRewardRecord();
-        if (record.count >= AdManager.WECHAT_SHARE_REWARD_LIMIT) {
-            return;
-        }
-
-        record.count += 1;
-        const wxApi = (globalThis as any).wx;
-        try {
-            wxApi?.setStorageSync?.(AdManager.WECHAT_SHARE_REWARD_STORAGE_KEY, record);
-            this.logWechatEvent('reward_share_counted', { count: record.count });
-        } catch (error) {
-            console.warn('[AdManager] 保存微信分享次数失败:', error);
-        }
-
-        this.syncWechatRewardMode();
+    private recordWechatShareSuccess(rewardKey: string): void {
+        const count = PlayerData.getInstance().incrementWechatShareRewardCount(
+            rewardKey,
+            AdManager.WECHAT_SHARE_REWARD_LIMIT
+        );
+        this.logWechatEvent('reward_share_counted', { rewardKey, count });
+        AdManager._wechatRewardModeEvents.emit(AdManager.WECHAT_REWARD_MODE_CHANGED);
     }
 
     private logWechatEvent(event: string, payload?: Record<string, string | number | boolean>): void {
@@ -326,9 +276,11 @@ export class AdManager extends Component {
 
         try {
             // 创建广告实例（全局单例）
-            this.rewardedVideoAd = adApi.createRewardedVideoAd({
-                adUnitId
-            });
+            const createOptions: { adUnitId: string; disableFallbackSharePage?: boolean } = { adUnitId };
+            if (platformName === '微信') {
+                createOptions.disableFallbackSharePage = true;
+            }
+            this.rewardedVideoAd = adApi.createRewardedVideoAd(createOptions);
 
             if (!this.rewardedVideoAd) {
                 console.error('[AdManager] 创建广告实例失败');
@@ -349,7 +301,7 @@ export class AdManager extends Component {
 
             // 监听用户关闭广告
             this.rewardedVideoAd.onClose((res: any) => {
-                const isEnded = res?.isEnded === true;
+                const isEnded = res?.isEnded === true || (platformName === '微信' && res === undefined);
                 console.log(`[AdManager] 用户关闭${platformName}广告, isEnded:`, isEnded);
                 this._isPlaying = false;
                 this._isAdReady = false;
@@ -397,18 +349,18 @@ export class AdManager extends Component {
 
     /**
      * 展示激励视频广告
+     * @param rewardKey 微信分享次数的独立计数键
      * @param onReward 奖励回调，参数为是否完整观看（true=发放奖励）
      * @returns Promise，展示成功或失败
      */
-    showRewardedAd(onReward?: (success: boolean) => void): Promise<void> {
+    showRewardedAd(rewardKey: string, onReward?: (success: boolean) => void): Promise<void> {
         if (AdManager.isWechatSharePlatform()) {
-            if (AdManager.shouldUseWechatShareReward()) {
-                return this.showWechatShare(onReward);
+            if (AdManager.shouldUseWechatShareReward(rewardKey)) {
+                return this.showWechatShare(rewardKey, onReward);
             }
 
-            const wxApi = (globalThis as any).wx;
             if (!this.rewardedVideoAd) {
-                this.initRewardedVideoAd(wxApi, this.rewardedAdUnitId, '微信');
+                this.initRewardedVideoAd((globalThis as any).wx, this.rewardedAdUnitId, '微信');
             }
         }
 
@@ -475,7 +427,7 @@ export class AdManager extends Component {
     }
 
     /** 微信无分享完成回调，按离开小游戏到返回的时长判定结果。 */
-    private showWechatShare(onReward?: (success: boolean) => void): Promise<void> {
+    private showWechatShare(rewardKey: string, onReward?: (success: boolean) => void): Promise<void> {
         const wxApi = (globalThis as any).wx;
         if (!wxApi?.shareAppMessage) {
             onReward?.(false);
@@ -493,6 +445,7 @@ export class AdManager extends Component {
             this._shareHiddenAt = null;
             this._shareResolve = resolve;
             this._shareReject = reject;
+            this._activeWechatShareRewardKey = rewardKey;
             this._onRewardCallback = onReward || null;
 
             try {
@@ -508,15 +461,17 @@ export class AdManager extends Component {
         const onReward = this._onRewardCallback;
         const resolve = this._shareResolve;
         const reject = this._shareReject;
+        const rewardKey = this._activeWechatShareRewardKey;
 
         this._isPlaying = false;
         this._shareHiddenAt = null;
         this._shareResolve = null;
         this._shareReject = null;
+        this._activeWechatShareRewardKey = null;
         this._onRewardCallback = null;
 
-        if (success && !error) {
-            this.recordWechatShareSuccess();
+        if (success && !error && rewardKey) {
+            this.recordWechatShareSuccess(rewardKey);
         }
 
         this.logWechatEvent('reward_share_finished', {
