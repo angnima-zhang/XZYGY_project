@@ -105,6 +105,8 @@ interface PlayerDataSave {
     wonToday: boolean;
     /** 玩家主动顺延后的下一次重置时间戳（旧存档没有此字段） */
     dailyResetPostponeUntil?: number;
+    /** 微信各升级项在当前进度周期内已获得的分享奖励次数 */
+    wechatShareRewardCounts?: Record<string, number>;
 }
 
 export class PlayerData {
@@ -241,6 +243,7 @@ export class PlayerData {
 
     /** 当前余额 */
     private _balance: number = 0;
+    private _cheatModeEnabled: boolean = false;
 
     /** 8种升级项的当前状态 */
     private _upgrades: Record<UpgradeType, UpgradeState> = {} as Record<UpgradeType, UpgradeState>;
@@ -269,6 +272,9 @@ export class PlayerData {
     /** 今日是否已达目标 */
     private _wonToday: boolean = false;
 
+    /** 微信各升级项在当前进度周期内已获得的分享奖励次数 */
+    private _wechatShareRewardCounts: Record<string, number> = {};
+
     /** 初始化数据 */
     private constructor() {
         this.load();
@@ -282,6 +288,27 @@ export class PlayerData {
      */
     getBalance(): number {
         return this._balance;
+    }
+
+    /** 作弊模式仅在当前游戏进程内生效，重启后自动关闭。 */
+    isCheatModeEnabled(): boolean {
+        return this._cheatModeEnabled;
+    }
+
+    setCheatModeEnabled(enabled: boolean): void {
+        this._cheatModeEnabled = enabled;
+        console.log(`[PlayerData] 作弊模式${enabled ? '开启' : '关闭'}`);
+    }
+
+    getWechatShareRewardCount(rewardKey: string): number {
+        return Math.max(0, Number(this._wechatShareRewardCounts[rewardKey]) || 0);
+    }
+
+    incrementWechatShareRewardCount(rewardKey: string, limit: number): number {
+        const nextCount = Math.min(limit, this.getWechatShareRewardCount(rewardKey) + 1);
+        this._wechatShareRewardCounts[rewardKey] = nextCount;
+        this.save();
+        return nextCount;
     }
 
     /**
@@ -304,6 +331,11 @@ export class PlayerData {
      * @returns 是否成功（余额不足时返回false）
      */
     subtractBalance(amount: number): boolean {
+        if (this._cheatModeEnabled) {
+            console.log(`[PlayerData] 作弊模式免除余额消耗: ${amount}`);
+            return true;
+        }
+
         if (this._balance < amount) {
             console.warn(`[PlayerData] 余额不足，需要: ${amount}, 当前: ${this._balance}`);
             return false;
@@ -830,6 +862,7 @@ export class PlayerData {
         this._pityCounter = 0;
         this._wonToday = false;
         this._dailyResetPostponeUntil = 0;
+        this._wechatShareRewardCounts = {};
         
         // 重置8种升级项为初始值
         (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {
@@ -868,7 +901,8 @@ export class PlayerData {
                 pityCounter: this._pityCounter,
                 lastResetTime: this._lastResetTime,
                 wonToday: this._wonToday,
-                dailyResetPostponeUntil: this._dailyResetPostponeUntil
+                dailyResetPostponeUntil: this._dailyResetPostponeUntil,
+                wechatShareRewardCounts: this._wechatShareRewardCounts
             };
             
             this.writeLocalSave(JSON.stringify(saveData));
@@ -900,6 +934,7 @@ export class PlayerData {
             this._lastResetTime = saveData.lastResetTime;
             this._wonToday = saveData.wonToday;
             this._dailyResetPostponeUntil = saveData.dailyResetPostponeUntil ?? 0;
+            this._wechatShareRewardCounts = saveData.wechatShareRewardCounts ?? {};
             
             console.log('[PlayerData] 数据加载成功');
             this.checkDailyReset(); // 检查是否需要每日重置
@@ -955,6 +990,7 @@ export class PlayerData {
         this._wonToday = false;
         this._lastResetTime = Date.now();
         this._dailyResetPostponeUntil = 0;
+        this._wechatShareRewardCounts = {};
         
         // 初始化8种升级项为初始值
         (Object.keys(this.UPGRADE_CONFIGS) as UpgradeType[]).forEach(type => {

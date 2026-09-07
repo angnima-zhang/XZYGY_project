@@ -669,6 +669,11 @@ export class GameManager {
         return success;
     }
 
+    setCheatModeEnabled(enabled: boolean): void {
+        this._playerData.setCheatModeEnabled(enabled);
+        this.notifyBalanceChange();
+    }
+
     /**
      * 获取升级项的当前数值
      * @param type 升级项类型

@@ -22,6 +22,7 @@ import { GameManager } from '../core/GameManager';
 import { NumberFormatter } from '../utils/NumberFormatter';
 import { PlayerData } from '../core/PlayerData';
 import { AdManager } from './AdManager';
+import { MainUI } from './MainUI';
 
 // 解构装饰器
 const { ccclass, property } = _decorator;
@@ -31,6 +32,8 @@ const { ccclass, property } = _decorator;
  */
 @ccclass('AutoFlipBuyCtrl')
 export class AutoFlipBuyCtrl extends Component {
+
+    private readonly WECHAT_REWARD_KEY = 'autoFlip';
 
     /**
      * 标题 Label 节点
@@ -107,6 +110,7 @@ export class AutoFlipBuyCtrl extends Component {
         // 注册余额变更回调，实时刷新按钮状态
         this._balanceChangeCallback = this._onEventCallback.bind(this);
         this._gameManager.onBalanceChange(this._balanceChangeCallback);
+        AdManager.onWechatRewardModeChanged(this._onEventCallback, this);
 
         console.log('[AutoFlipBuyCtrl] 初始化完成');
     }
@@ -131,6 +135,7 @@ export class AutoFlipBuyCtrl extends Component {
             if (this.adButtonNode && this.adButtonNode.isValid) {
                 this.adButtonNode.off(Node.EventType.TOUCH_END, this.onAdButtonClick, this);
             }
+            AdManager.offWechatRewardModeChanged(this._onEventCallback, this);
         } catch (e) {
             console.warn('[AutoFlipBuyCtrl] onDestroy cleanup error:', e);
         }
@@ -158,7 +163,7 @@ export class AutoFlipBuyCtrl extends Component {
         const price = this._gameManager.getUpgradePrice('time');
         const balance = this._gameManager.getBalance();
 
-        if (balance < price) {
+        if (balance < price && !this._gameManager.getPlayerData().isCheatModeEnabled()) {
             console.warn(`[AutoFlipBuyCtrl] 余额不足，需要: ${price}, 当前: ${balance}`);
             return;
         }
@@ -200,9 +205,14 @@ export class AutoFlipBuyCtrl extends Component {
             return;
         }
 
-        console.log('[AutoFlipBuyCtrl] 广告按钮点击，展示激励视频广告...');
+        const usesWechatShareReward = AdManager.shouldUseWechatShareReward(this.WECHAT_REWARD_KEY);
+        console.log(`[AutoFlipBuyCtrl] ${usesWechatShareReward ? '分享' : '广告'}按钮点击，展示奖励流程...`);
 
-        adManager.showRewardedAd((success: boolean) => {
+        adManager.showRewardedAd(this.WECHAT_REWARD_KEY, (success: boolean) => {
+            if (usesWechatShareReward) {
+                MainUI.getInstance()?.showShareResultToast(success);
+            }
+
             if (success) {
                 // 用户看完了广告，发放自动翻转奖励
                 console.log('[AutoFlipBuyCtrl] 发放广告自动翻转奖励');
@@ -256,7 +266,7 @@ export class AutoFlipBuyCtrl extends Component {
 
         const price = this._gameManager.getUpgradePrice('time');
         const balance = this._gameManager.getBalance();
-        const canAfford = balance >= price;
+        const canAfford = this._gameManager.getPlayerData().isCheatModeEnabled() || balance >= price;
         const isAutoFlipping = this._gameManager.isAutoFlipping();
         const isAtLimit = this._isUpgradeAtLimit();
         const canBuy = canAfford && !isAutoFlipping && !isAtLimit;
@@ -293,11 +303,13 @@ export class AutoFlipBuyCtrl extends Component {
                 adButton.interactable = !isAtLimit && !isAutoFlipping;
             }
 
-            if (isAtLimit) {
-                const adLabel = this.adButtonNode.getComponentInChildren(Label);
-                if (adLabel) {
-                    adLabel.string = '已满级';
-                }
+            const adLabel = this.adButtonNode.getComponentInChildren(Label);
+            if (adLabel) {
+                adLabel.string = isAtLimit
+                    ? '已满级'
+                    : AdManager.shouldUseWechatShareReward(this.WECHAT_REWARD_KEY)
+                        ? '分享购买'
+                        : '广告购买';
             }
         }
     }
